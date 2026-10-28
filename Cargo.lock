@@ -2984,9 +2984,17 @@ name = "ows-playground"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "futures-executor",
+ "futures-util",
+ "getrandom 0.2.17",
+ "gloo-net",
+ "http",
+ "js-sys",
  "ows-dsl",
+ "ows-expressions",
  "ows-workflow-editor",
  "serde_json",
+ "uuid",
 ]
 
 [[package]]

@@ -54,10 +54,17 @@ pub struct WorkflowExecutionRecord {
     pub steps: Vec<WorkflowExecutionStep>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct WorkflowExample {
+    pub id: String,
+    pub label: String,
+}
+
 #[component]
 pub fn WorkflowEditor(
     definition: String, on_change: EventHandler<String>, on_validate: EventHandler<String>,
-    validation: ValidationState, execution: WorkflowExecution, on_execute: EventHandler<()>,
+    validation: ValidationState, execution: WorkflowExecution, on_execute: EventHandler<()>, on_import: EventHandler<()>,
+    examples: Vec<WorkflowExample>, on_select_example: EventHandler<String>, on_configure_input: EventHandler<()>,
     execution_history: Vec<WorkflowExecutionRecord>, notice: Option<String>,
     #[props(default)] initial_execution_id: Option<String>,
     #[props(default)] database_backend: String, #[props(default)] database_tables: Vec<String>,
@@ -98,6 +105,10 @@ pub fn WorkflowEditor(
     let mut logs_height = use_signal(|| 300.0_f64);
     let mut logs_resize_origin = use_signal(|| None::<(f64, f64)>);
     let mut json_draft = use_signal(|| definition.clone());
+    use_effect(use_reactive((&definition,), {
+        let mut json_draft = json_draft;
+        move |(value,)| json_draft.set(value.clone())
+    }));
     let mut task_draft = use_signal(|| "{}".to_string());
     let mut edit_error = use_signal(|| None::<String>);
     let mut selected_trigger_index = use_signal(|| None::<usize>);
@@ -230,13 +241,8 @@ pub fn WorkflowEditor(
     let selected_type = if let Some(trigger) = selected_trigger.as_ref() {
         trigger["type"].as_str().unwrap_or("database")
     } else {
-        selected_definition
-            .as_object()
-            .and_then(|object| object.keys().next())
-            .map(String::as_str)
-            .unwrap_or("task")
+        task_type(&selected_definition).unwrap_or("task")
     };
-    let call_target = selected_definition["call"].as_str().unwrap_or_default();
     let visible_validation_errors = validation
         .errors
         .iter()
@@ -319,7 +325,7 @@ pub fn WorkflowEditor(
             onpointerup: move |_| logs_resize_origin.set(None),
             header { class: "workflow-editor__topbar",
                 nav { class: "workflow-editor__tabs", "aria-label": "Workflow sections",
-                    for (tab, label) in [("editor", "Editor"), ("text", "Text editor"), ("executions", "Executions")] {
+                    for (tab, label) in [("editor", "Node editor"), ("text", "Text editor"), ("executions", "Executions")] {
                         button {
                             class: if editor_tab() == tab { "workflow-editor__tab is-active" } else { "workflow-editor__tab" },
                             r#type: "button",
@@ -338,24 +344,34 @@ pub fn WorkflowEditor(
                         }
                     }
                 }
-                if editor_tab() != "executions" {
-                    div { class: "workflow-editor__canvas-tools",
-                        if editor_tab() == "editor" {
-                            div { class: "workflow-editor__execute-group",
-                                button {
-                                    class: "workflow-editor__execute",
-                                    r#type: "button",
-                                    disabled: validation.checking || !validation.valid || execution.running,
-                                    title: if validation.checking { "Validating workflow" } else if !validation.valid { "Fix validation errors before running" } else if execution.running { "Workflow is running" } else { "Run workflow" },
-                                    onclick: move |_| { logs_open.set(true); on_execute.call(()); },
-                                    if execution.running { span { class: "workflow-editor__execute-spinner" } } else { EditorIcon { name: "play", size: 15 } }
-                                    if execution.running { "Running" } else { "Run" }
-                                }
+                div { class: "workflow-editor__canvas-tools",
+                    if !examples.is_empty() {
+                        select {
+                            class: "workflow-editor__example-select",
+                            value: "",
+                            aria_label: "Select an example workflow",
+                            onchange: move |event| on_select_example.call(event.value()),
+                            option { value: "", "Examples…" }
+                            for example in examples.iter() {
+                                option { key: "{example.id}", value: "{example.id}", "{example.label}" }
                             }
                         }
-                        button { class: "workflow-editor__tool-button", title: "Add standalone node", aria_label: "Add standalone node", r#type: "button", onclick: move |_| { pending_add_source.set(None); pending_insert_edge.set(None); palette_open.set(true); }, EditorIcon { name: "plus", size: 18 } }
-                        button { class: "workflow-editor__tool-button", title: "Search nodes", aria_label: "Search nodes", r#type: "button", onclick: move |_| { pending_add_source.set(None); pending_insert_edge.set(None); palette_open.set(true); }, EditorIcon { name: "search", size: 17 } }
                     }
+                    button { class: "workflow-editor__import-button", r#type: "button", onclick: move |_| on_import.call(()), EditorIcon { name: "file", size: 15 } "Import" }
+                    button { class: "workflow-editor__input-button", r#type: "button", onclick: move |_| on_configure_input.call(()), "Input" }
+                    div { class: "workflow-editor__execute-group",
+                        button {
+                            class: "workflow-editor__execute",
+                            r#type: "button",
+                            disabled: validation.checking || !validation.valid || execution.running,
+                            title: if validation.checking { "Validating workflow" } else if !validation.valid { "Fix validation errors before running" } else if execution.running { "Workflow is running" } else { "Run workflow" },
+                            onclick: move |_| { logs_open.set(true); on_execute.call(()); },
+                            if execution.running { span { class: "workflow-editor__execute-spinner" } } else { EditorIcon { name: "play", size: 15 } }
+                            if execution.running { "Running" } else { "Run" }
+                        }
+                    }
+                    button { class: "workflow-editor__tool-button", title: "Add standalone node", aria_label: "Add standalone node", r#type: "button", onclick: move |_| { pending_add_source.set(None); pending_insert_edge.set(None); palette_open.set(true); }, EditorIcon { name: "plus", size: 18 } }
+                    button { class: "workflow-editor__tool-button", title: "Search nodes", aria_label: "Search nodes", r#type: "button", onclick: move |_| { pending_add_source.set(None); pending_insert_edge.set(None); palette_open.set(true); }, EditorIcon { name: "search", size: 17 } }
                 }
             }
 
@@ -659,7 +675,7 @@ pub fn WorkflowEditor(
                                     {
                                         let name = task_name(task).unwrap_or_else(|| "Unnamed task".into());
                                         let kind = task_definition(task)
-                                            .and_then(|value| value.as_object().and_then(|object| object.keys().next().cloned()))
+                                            .and_then(|value| task_type(&value).map(str::to_owned))
                                             .unwrap_or_else(|| "task".into());
                                         let icon = node_icon(&kind);
                                         let disabled = node_is_disabled(&document, &name);
@@ -675,18 +691,15 @@ pub fn WorkflowEditor(
                                             div { class: if editor_tab() == "executions" { "workflow-node-group workflow-node-group--canvas workflow-node-group--readonly" } else { "workflow-node-group workflow-node-group--canvas" }, style: "left: {position.0}px; top: {position.1}px;",
                                                 if editor_tab() == "editor" {
                                                 div { class: "workflow-node-actions",
-                                                        button { class: "workflow-editor__node-action", title: "Validate workflow", aria_label: "Validate workflow", r#type: "button", onclick: {
-                                                            let current = definition.clone();
-                                                            let value = task_value.clone();
-                                                            move |_| {
-                                                                selected_index.set(index);
-                                                                selected_trigger_index.set(None);
-                                                                inspector_open.set(true);
-                                                                task_draft.set(format_json(&value));
-                                                                edit_error.set(None);
-                                                                on_validate.call(current.clone());
-                                                            }
-                                                        }, EditorIcon { name: "play", size: 14 } }
+                                                        button {
+                                                            class: "workflow-editor__node-action",
+                                                            title: if validation.checking { "Validating workflow" } else if !validation.valid { "Fix validation errors before running" } else if execution.running { "Workflow is running" } else { "Run workflow" },
+                                                            aria_label: "Run workflow",
+                                                            r#type: "button",
+                                                            disabled: validation.checking || !validation.valid || execution.running,
+                                                            onclick: move |_| { logs_open.set(true); on_execute.call(()); },
+                                                            EditorIcon { name: "play", size: 14 }
+                                                        }
                                                         button { class: if disabled { "workflow-editor__node-action is-muted" } else { "workflow-editor__node-action" }, title: if disabled { "Activate node" } else { "Deactivate node" }, aria_label: if disabled { "Activate node" } else { "Deactivate node" }, r#type: "button", onclick: {
                                                             let mut next = document.clone();
                                                             let node_name = name.clone();
@@ -867,17 +880,6 @@ pub fn WorkflowEditor(
                                     }
                                 }
                             }
-                            if editor_tab() == "executions" {
-                                div { class: "workflow-editor__history",
-                                    WorkflowLogs {
-                                        key: "{selected_execution_key}",
-                                        records: selected_execution.iter().cloned().collect(),
-                                        empty_message: "Run this workflow to see its execution logs.".to_string(),
-                                        initial_execution_id: selected_execution.as_ref().map(|record| record.execution_id.clone()),
-                                        on_step_selected: move |node: Option<String>| selected_execution_node.set(node)
-                                    }
-                                }
-                            }
                         }
                         if editor_tab() == "editor" || editor_tab() == "executions" {
                             div { class: "workflow-editor__zoom-controls",
@@ -894,50 +896,23 @@ pub fn WorkflowEditor(
                             }
                         }
                         }
-                        if editor_tab() == "editor" {
-                        footer {
-                            class: if logs_open() { "workflow-editor__logs is-open" } else { "workflow-editor__logs" },
-                            style: "--workflow-logs-height: {logs_height()}px;",
-                            if logs_open() {
-                                div {
-                                    class: "workflow-editor__logs-resize-handle",
-                                    role: "separator",
-                                    aria_label: "Resize logs panel",
-                                    aria_orientation: "horizontal",
-                                    aria_valuenow: "{logs_height() as i32}",
-                                    tabindex: "0",
-                                    onpointerdown: move |event| {
-                                        let point = event.data().client_coordinates();
-                                        logs_open.set(true);
-                                        logs_resize_origin.set(Some((point.y, logs_height())));
-                                        event.prevent_default();
-                                    },
-                                    onkeydown: move |event| {
-                                        match event.key() {
-                                            Key::ArrowUp => logs_height.set((logs_height() + 20.0).min(700.0)),
-                                            Key::ArrowDown => logs_height.set((logs_height() - 20.0).max(150.0)),
-                                            _ => {}
-                                        }
-                                    },
-                                    span {}
-                                }
+                    }
+
+                    if editor_tab() == "executions" {
+                        aside { class: "workflow-editor__execution-details", aria_label: "Execution step logs",
+                            WorkflowLogs {
+                                key: "{selected_execution_key}",
+                                records: selected_execution.iter().cloned().collect(),
+                                empty_message: "Run this workflow to see its execution logs.".to_string(),
+                                initial_execution_id: selected_execution.as_ref().map(|record| record.execution_id.clone()),
+                                on_step_selected: move |node: Option<String>| selected_execution_node.set(node)
                             }
-                            button { class: "workflow-editor__logs-toggle", r#type: "button", onclick: move |_| logs_open.set(!logs_open()),
-                                span { "Logs" }
-                                if logs_open() { EditorIcon { name: "chevron-down", size: 14 } } else { EditorIcon { name: "chevron-up", size: 14 } }
-                            }
-                            if logs_open() {
-                                div { class: "workflow-editor__logs-content",
-                                    WorkflowLogs { records: editor_execution_records.clone(), empty_message: "Run the workflow from the editor to see its logs here.".to_string() }
-                                }
-                            }
-                        }
                         }
                     }
 
                     if editor_tab() == "editor" && inspector_open() {
-                    div { class: "workflow-node-settings-overlay", role: "dialog", aria_modal: "true", aria_label: "Node settings",
-                    aside { class: "workflow-editor__inspector workflow-node-settings-modal panel",
+                    div { class: "workflow-node-picker__overlay workflow-node-settings-overlay", role: "dialog", aria_modal: "true", aria_label: "Node settings",
+                    section { class: "workflow-node-picker workflow-node-settings-modal panel",
                         div { class: "workflow-editor__section-heading",
                             div { class: "workflow-editor__inspector-title",
                                 p { class: "workflow-editor__eyebrow", "NODE SETTINGS" }
@@ -1077,92 +1052,24 @@ pub fn WorkflowEditor(
                                     "↓ Move down"
                                 }
                             }
-                            if selected_type == "call" {
-                                div { class: "workflow-editor__definition-field",
-                                    div { class: "workflow-editor__definition-heading",
-                                        span { "Call settings" }
-                                        small { "Configure the operation and its inputs." }
-                                    }
-                                    label { class: "field",
-                                        span { "Call target" }
-                                        input {
-                                            placeholder: "core.noop",
-                                            value: "{call_target}",
-                                            oninput: {
-                                                let mut next = document.clone();
-                                                let mut definition = selected_definition.clone();
-                                                let task_name = selected_name.clone();
-                                                move |event| {
-                                                    definition["call"] = Value::String(event.value());
-                                                    replace_task_definition(&mut next, selected, &task_name, definition.clone());
-                                                    on_change.call(format_json(&next));
-                                                }
-                                            }
-                                        }
-                                        if selected_node_validation_blocked {
-                                            div { class: "workflow-node-validation-error workflow-node-validation-error--field", role: "alert",
-                                                strong { if validation.checking { "Validating this node…" } else { "Fix this field to continue." } }
-                                                if !selected_node_validation_errors.is_empty() {
-                                                    ul { for (index, error) in selected_node_validation_errors.iter().enumerate() { li { key: "call-validation-{index}", "{error}" } } }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if let Some(inputs) = selected_definition["with"].as_object() {
-                                        div { class: "workflow-editor__call-inputs",
-                                            div { class: "workflow-editor__call-input-heading", strong { "Input values" } small { "Expressions can use the OWS expression syntax." } }
-                                            for (key, value) in inputs.iter() {
-                                                {
-                                                    let key = key.clone();
-                                                    let field_value = display_form_value(value);
-                                                    rsx! {
-                                                        label { class: "field",
-                                                            span { "{key}" }
-                                                            input {
-                                                                value: "{field_value}",
-                                                                oninput: {
-                                                                    let mut next = document.clone();
-                                                                    let mut definition = selected_definition.clone();
-                                                                    let task_name = selected_name.clone();
-                                                                    let key = key.clone();
-                                                                    move |event| {
-                                                                        definition["with"][key.clone()] = Value::String(event.value());
-                                                                        replace_task_definition(&mut next, selected, &task_name, definition.clone());
-                                                                        on_change.call(format_json(&next));
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    button {
-                                        class: "button button-quiet workflow-editor__add-input",
-                                        r#type: "button",
-                                        onclick: {
-                                            let mut next = document.clone();
-                                            let mut definition = selected_definition.clone();
-                                            let task_name = selected_name.clone();
-                                            move |_| {
-                                                if !definition["with"].is_object() { definition["with"] = json!({}); }
-                                                if let Some(inputs) = definition["with"].as_object_mut() {
-                                                    let mut index = inputs.len() + 1;
-                                                    let mut key = format!("input_{index}");
-                                                    while inputs.contains_key(&key) { index += 1; key = format!("input_{index}"); }
-                                                    inputs.insert(key, Value::String(String::new()));
-                                                }
-                                                replace_task_definition(&mut next, selected, &task_name, definition.clone());
-                                                on_change.call(format_json(&next));
-                                            }
-                                        },
-                                        "+ Add input"
+                            TaskSettingsForm {
+                                task_type: selected_type.to_string(),
+                                definition: selected_definition.clone(),
+                                on_change: {
+                                    let mut next = document.clone();
+                                    let task_name = selected_name.clone();
+                                    move |updated: Value| {
+                                        task_draft.set(format_json(&updated));
+                                        edit_error.set(None);
+                                        replace_task_definition(&mut next, selected, &task_name, updated);
+                                        on_change.call(format_json(&next));
                                     }
                                 }
-                            } else {
+                            }
+                            details { class: "workflow-editor__advanced-definition",
+                                summary { "Advanced JSON" }
                                 label { class: "field workflow-editor__definition-field",
-                                    span { "Definition · {pretty_type(selected_type)}" }
+                                    span { "Full {pretty_type(selected_type)} definition" }
                                     textarea {
                                         class: "code-editor workflow-editor__definition",
                                         value: "{task_draft}",
@@ -1179,12 +1086,8 @@ pub fn WorkflowEditor(
                                                         edit_error.set(None);
                                                         on_validate.call(format_json(&next));
                                                     }
-                                                    Ok(_) => {
-                                                        edit_error.set(Some("Node definition must be a JSON object".into()));
-                                                    }
-                                                    Err(error) => {
-                                                        edit_error.set(Some(format!("Invalid JSON: {error}")));
-                                                    }
+                                                    Ok(_) => edit_error.set(Some("Node definition must be a JSON object".into())),
+                                                    Err(error) => edit_error.set(Some(format!("Invalid JSON: {error}"))),
                                                 }
                                             }
                                         },
@@ -1213,7 +1116,7 @@ pub fn WorkflowEditor(
                                                 Err(_) => edit_error.set(Some("Node definition must be valid JSON".into())),
                                             }
                                         },
-                                        "Apply changes"
+                                        "Apply JSON changes"
                                     }
                                 }
                             }
@@ -1223,6 +1126,46 @@ pub fn WorkflowEditor(
                         if let Some(message) = edit_error() { p { class: "workflow-editor__inline-error", "{message}" } }
                     }
                     }
+                    }
+                }
+            }
+
+            if editor_tab() != "executions" {
+                footer {
+                    class: if logs_open() { "workflow-editor__logs is-open" } else { "workflow-editor__logs" },
+                    style: "--workflow-logs-height: {logs_height()}px;",
+                    if logs_open() {
+                        div {
+                            class: "workflow-editor__logs-resize-handle",
+                            role: "separator",
+                            aria_label: "Resize logs panel",
+                            aria_orientation: "horizontal",
+                            aria_valuenow: "{logs_height() as i32}",
+                            tabindex: "0",
+                            onpointerdown: move |event| {
+                                let point = event.data().client_coordinates();
+                                logs_open.set(true);
+                                logs_resize_origin.set(Some((point.y, logs_height())));
+                                event.prevent_default();
+                            },
+                            onkeydown: move |event| {
+                                match event.key() {
+                                    Key::ArrowUp => logs_height.set((logs_height() + 20.0).min(700.0)),
+                                    Key::ArrowDown => logs_height.set((logs_height() - 20.0).max(150.0)),
+                                    _ => {}
+                                }
+                            },
+                            span {}
+                        }
+                    }
+                    button { class: "workflow-editor__logs-toggle", r#type: "button", onclick: move |_| logs_open.set(!logs_open()),
+                        span { "Logs" }
+                        if logs_open() { EditorIcon { name: "chevron-down", size: 14 } } else { EditorIcon { name: "chevron-up", size: 14 } }
+                    }
+                    if logs_open() {
+                        div { class: "workflow-editor__logs-content",
+                            WorkflowLogs { records: editor_execution_records.clone(), empty_message: "Run the workflow to see its logs here.".to_string() }
+                        }
                     }
                 }
             }
@@ -1362,6 +1305,333 @@ pub fn WorkflowEditor(
                 }
             }
         }
+    }
+}
+
+#[component]
+fn TaskSettingsForm(
+    task_type: String, definition: Value, on_change: EventHandler<Value>,
+) -> Element {
+    let call_target = definition["call"].as_str().unwrap_or_default().to_string();
+    let is_custom_target = !call_target.is_empty() && call_target != "http" && call_target != "openapi";
+    let mut fields = definition.clone();
+    if task_type == "call" {
+        if let Some(fields) = fields.as_object_mut() {
+            fields.remove("call");
+        }
+    }
+    let form_label = if task_type == "call" { "Call options" } else { "Task options" };
+    rsx! {
+        div { class: "workflow-task-form",
+            if task_type == "call" {
+                div { class: "workflow-task-form__section",
+                    h3 { "Call target" }
+                    p { "Choose a built-in service or enter the name of a registered function." }
+                    label { class: "field",
+                        span { "Service" }
+                        select {
+                            value: if call_target.is_empty() { "".to_string() } else if is_custom_target { "custom".to_string() } else { call_target.clone() },
+                            onchange: {
+                                let mut definition = definition.clone();
+                                let on_change = on_change.clone();
+                                move |event| {
+                                    let selected = event.value();
+                                    if selected != "custom" {
+                                        definition["call"] = Value::String(selected);
+                                    } else if !is_custom_target {
+                                        definition["call"] = Value::String(String::new());
+                                    }
+                                    on_change.call(definition.clone());
+                                }
+                            },
+                            option { value: "", "Select a service…" }
+                            option { value: "http", "HTTP request" }
+                            option { value: "openapi", "OpenAPI operation" }
+                            if is_custom_target { option { value: "custom", "Custom · {call_target}" } }
+                            else { option { value: "custom", "Custom function…" } }
+                        }
+                    }
+                    if is_custom_target || call_target.is_empty() {
+                        label { class: "field",
+                            span { "Function name" }
+                            input {
+                                placeholder: "core.noop",
+                                value: "{call_target}",
+                                oninput: {
+                                    let mut definition = definition.clone();
+                                    let on_change = on_change.clone();
+                                    move |event| {
+                                        definition["call"] = Value::String(event.value());
+                                        on_change.call(definition.clone());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if call_target == "http" {
+                        p { class: "workflow-task-form__hint", "Configure method, endpoint, headers, body, and response handling in Call options below." }
+                    } else if call_target == "openapi" {
+                        p { class: "workflow-task-form__hint", "Configure the OpenAPI operation and its parameters in Call options below." }
+                    }
+                }
+            }
+            div { class: "workflow-task-form__section",
+                h3 { "{pretty_type(&task_type)} · {form_label}" }
+                p { "Edit fields directly. Expressions use the OWS expression syntax." }
+                JsonValueForm {
+                    label: form_label.to_string(),
+                    value: fields,
+                    on_change: {
+                        let on_change = on_change;
+                        let call_target = call_target.clone();
+                        move |mut updated: Value| {
+                            if task_type == "call" { updated["call"] = Value::String(call_target.clone()); }
+                            on_change.call(updated);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn JsonValueForm(label: String, value: Value, on_change: EventHandler<Value>) -> Element {
+    match &value {
+        Value::Object(fields) => rsx! {
+            section { class: "workflow-form-object",
+                div { class: "workflow-form-object__heading",
+                    strong { "{form_field_label(&label)}" }
+                    button {
+                        class: "workflow-form-object__action",
+                        r#type: "button",
+                        title: "Add a field",
+                        onclick: {
+                            let value = value.clone();
+                            let on_change = on_change.clone();
+                            move |_| {
+                                let mut fields = value.as_object().cloned().unwrap_or_default();
+                                let mut index = fields.len() + 1;
+                                let mut key = format!("field_{index}");
+                                while fields.contains_key(&key) { index += 1; key = format!("field_{index}"); }
+                                fields.insert(key, Value::String(String::new()));
+                                on_change.call(Value::Object(fields));
+                            }
+                        },
+                        "+ Add field"
+                    }
+                }
+                if fields.is_empty() { p { class: "workflow-task-form__hint", "No fields yet. Add a field to configure this option." } }
+                for (key, child) in fields.iter() {
+                    div { class: "workflow-form-object__row", key: "{key}",
+                        JsonValueForm {
+                            label: key.clone(),
+                            value: child.clone(),
+                            on_change: {
+                                let key = key.clone();
+                                let value = value.clone();
+                                let on_change = on_change.clone();
+                                move |updated| {
+                                    let mut fields = value.as_object().cloned().unwrap_or_default();
+                                    fields.insert(key.clone(), updated);
+                                    on_change.call(Value::Object(fields));
+                                }
+                            }
+                        }
+                        button {
+                            class: "workflow-form-object__remove",
+                            r#type: "button",
+                            title: "Remove field",
+                            aria_label: "Remove {key}",
+                            onclick: {
+                                let key = key.clone();
+                                let value = value.clone();
+                                let on_change = on_change.clone();
+                                move |_| {
+                                    let mut fields = value.as_object().cloned().unwrap_or_default();
+                                    fields.remove(&key);
+                                    on_change.call(Value::Object(fields));
+                                }
+                            },
+                            "×"
+                        }
+                    }
+                }
+            }
+        },
+        Value::Array(items) => rsx! {
+            section { class: "workflow-form-array",
+                div { class: "workflow-form-object__heading",
+                    strong { "{form_field_label(&label)}" }
+                    button {
+                        class: "workflow-form-object__action",
+                        r#type: "button",
+                        onclick: {
+                            let value = value.clone();
+                            let on_change = on_change.clone();
+                            move |_| {
+                                let mut items = value.as_array().cloned().unwrap_or_default();
+                                items.push(items.first().map(default_form_value).unwrap_or_else(|| json!({})));
+                                on_change.call(Value::Array(items));
+                            }
+                        },
+                        "+ Add item"
+                    }
+                }
+                if items.is_empty() { p { class: "workflow-task-form__hint", "No items yet. Add an item to configure this list." } }
+                for (index, child) in items.iter().enumerate() {
+                    div { class: "workflow-form-array__item", key: "{index}",
+                        JsonValueForm {
+                            label: format!("Item {}", index + 1),
+                            value: child.clone(),
+                            on_change: {
+                                let index = index;
+                                let value = value.clone();
+                                let on_change = on_change.clone();
+                                move |updated| {
+                                    let mut items = value.as_array().cloned().unwrap_or_default();
+                                    if let Some(item) = items.get_mut(index) { *item = updated; }
+                                    on_change.call(Value::Array(items));
+                                }
+                            }
+                        }
+                        button {
+                            class: "workflow-form-object__remove",
+                            r#type: "button",
+                            title: "Remove item",
+                            onclick: {
+                                let value = value.clone();
+                                let on_change = on_change.clone();
+                                move |_| {
+                                    let mut items = value.as_array().cloned().unwrap_or_default();
+                                    if index < items.len() { items.remove(index); }
+                                    on_change.call(Value::Array(items));
+                                }
+                            },
+                            "Remove"
+                        }
+                    }
+                }
+            }
+        },
+        Value::String(text) if label == "method" => rsx! {
+            label { class: "field workflow-form-field",
+                span { "{form_field_label(&label)}" }
+                select {
+                    value: "{text}",
+                    onchange: move |event| on_change.call(Value::String(event.value())),
+                    for method in ["get", "post", "put", "patch", "delete", "head", "options"] {
+                        option { value: "{method}", selected: text.eq_ignore_ascii_case(method), "{method.to_uppercase()}" }
+                    }
+                }
+            }
+        },
+        Value::String(text) if is_multiline_form_field(&label) => rsx! {
+            label { class: "field workflow-form-field",
+                span { "{form_field_label(&label)}" }
+                textarea {
+                    class: "workflow-form-textarea",
+                    value: "{text}",
+                    spellcheck: "false",
+                    oninput: move |event| on_change.call(Value::String(event.value())),
+                }
+            }
+        },
+        Value::String(text) => rsx! {
+            label { class: "field workflow-form-field",
+                span { "{form_field_label(&label)}" }
+                input {
+                    r#type: if label == "endpoint" { "url" } else { "text" },
+                    value: "{text}",
+                    oninput: move |event| on_change.call(Value::String(event.value())),
+                }
+            }
+        },
+        Value::Number(number) => rsx! {
+            {
+                let integer = number.is_i64();
+                let display = number.to_string();
+                rsx! {
+                    label { class: "field workflow-form-field",
+                        span { "{form_field_label(&label)}" }
+                        input {
+                            r#type: "number",
+                            value: "{display}",
+                            oninput: move |event| {
+                                if integer {
+                                    if let Ok(value) = event.value().parse::<i64>() { on_change.call(Value::Number(value.into())); }
+                                } else if let Ok(value) = event.value().parse::<f64>() {
+                                    if let Some(value) = serde_json::Number::from_f64(value) { on_change.call(Value::Number(value)); }
+                                }
+                            },
+                        }
+                    }
+                }
+            }
+        },
+        Value::Bool(checked) => rsx! {
+            label { class: "workflow-form-checkbox",
+                input { r#type: "checkbox", checked: *checked, onchange: move |event| on_change.call(Value::Bool(event.checked())) }
+                span { "{form_field_label(&label)}" }
+            }
+        },
+        Value::Null => rsx! {
+            label { class: "field workflow-form-field",
+                span { "{form_field_label(&label)}" }
+                input {
+                    placeholder: "Enter a value",
+                    oninput: move |event| on_change.call(Value::String(event.value())),
+                }
+            }
+        },
+    }
+}
+
+fn form_field_label(key: &str) -> String {
+    match key {
+        "in" => "Input expression".to_string(),
+        "as" => "Output expression".to_string(),
+        "if" => "Run condition".to_string(),
+        "then" => "Flow after task".to_string(),
+        "each" => "Item variable".to_string(),
+        "at" => "Index variable".to_string(),
+        "endpoint" => "Endpoint URL".to_string(),
+        "with" => "Arguments / request options".to_string(),
+        "wait" => "Wait duration".to_string(),
+        "try" => "Tasks to try".to_string(),
+        "do" => "Nested tasks".to_string(),
+        "fork" => "Parallel branches".to_string(),
+        "script" => "Script".to_string(),
+        "code" => "Code".to_string(),
+        "output" => "Response format".to_string(),
+        "method" => "HTTP method".to_string(),
+        other => other
+            .split('_')
+            .map(|word| {
+                let mut chars = word.chars();
+                chars
+                    .next()
+                    .map(|first| first.to_uppercase().collect::<String>() + chars.as_str())
+                    .unwrap_or_default()
+            })
+            .collect::<Vec<_>>()
+            .join(" "),
+    }
+}
+
+fn is_multiline_form_field(key: &str) -> bool {
+    matches!(key, "code" | "body" | "as" | "expression" | "when" | "until" | "command")
+}
+
+fn default_form_value(value: &Value) -> Value {
+    match value {
+        Value::String(_) => Value::String(String::new()),
+        Value::Number(number) if number.is_f64() => json!(0.0),
+        Value::Number(_) => json!(0),
+        Value::Bool(_) => Value::Bool(false),
+        Value::Array(_) => Value::Array(Vec::new()),
+        Value::Object(_) => json!({}),
+        Value::Null => Value::Null,
     }
 }
 
@@ -1829,11 +2099,7 @@ fn connection_source_node(source: &str) -> &str {
 
 fn node_output_count(task: &Value) -> usize {
     let definition = task_definition(task).unwrap_or(Value::Null);
-    let kind = definition
-        .as_object()
-        .and_then(|object| object.keys().next())
-        .map(String::as_str)
-        .unwrap_or_default();
+    let kind = task_type(&definition).unwrap_or_default();
     match kind {
         "switch" => {
             definition["switch"].as_array().map(|branches| branches.len() + 1).unwrap_or(2).max(2)
@@ -2125,15 +2391,17 @@ fn task_definition(task: &Value) -> Option<Value> {
     task.get(task_name(task)?).cloned()
 }
 
+fn task_type(definition: &Value) -> Option<&str> {
+    let object = definition.as_object()?;
+    TASK_TYPES
+        .iter()
+        .find(|kind| **kind != "do" && object.contains_key(**kind))
+        .copied()
+        .or_else(|| object.contains_key("do").then_some("do"))
+}
+
 fn task_kind_is_supported(task: &Value) -> bool {
-    task_definition(task)
-        .and_then(|definition| {
-            definition
-                .as_object()
-                .filter(|object| object.len() == 1)
-                .and_then(|object| object.keys().next().cloned())
-        })
-        .is_some_and(|kind| TASK_TYPES.contains(&kind.as_str()))
+    task_definition(task).is_some_and(|definition| task_type(&definition).is_some())
 }
 
 fn trigger_kind_is_supported(trigger: &Value) -> bool {
@@ -2147,13 +2415,6 @@ fn replace_task_definition(document: &mut Value, index: usize, name: &str, defin
         if let Some(slot) = tasks.get_mut(index) {
             *slot = Value::Object(task);
         }
-    }
-}
-
-fn display_form_value(value: &Value) -> String {
-    match value {
-        Value::String(value) => value.clone(),
-        value => value.to_string(),
     }
 }
 

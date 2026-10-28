@@ -1176,8 +1176,9 @@ fn build_filters(
 
 fn read_event(event: &EventMessage, read: &str) -> Value {
     match read {
-        "envelope" => serde_json::to_value(ows_events::CloudEvent::from_message(event))
-            .unwrap_or(Value::Null),
+        "envelope" => {
+            serde_json::to_value(ows_events::CloudEvent::from_message(event)).unwrap_or(Value::Null)
+        }
         _ => event.data.clone().unwrap_or(Value::Null),
     }
 }
@@ -1298,9 +1299,7 @@ mod tests {
         let inner = inner();
         let err = WorkflowError::new(
             ows_core::ErrorKind::Runtime,
-            ows_core::ProblemDetails::standard(
-                ows_core::StandardErrorType::Runtime,
-            ),
+            ows_core::ProblemDetails::standard(ows_core::StandardErrorType::Runtime),
         );
         let ctx = ExpressionContext::default();
         let ec = crate::engine::ExecContext {
@@ -1328,10 +1327,8 @@ mod tests {
         let inner = inner();
         let err = WorkflowError::new(
             ows_core::ErrorKind::Runtime,
-            ows_core::ProblemDetails::standard(
-                ows_core::StandardErrorType::Communication,
-            )
-            .with_detail("d"),
+            ows_core::ProblemDetails::standard(ows_core::StandardErrorType::Communication)
+                .with_detail("d"),
         );
         let ctx = ExpressionContext::default();
         let ec = crate::engine::ExecContext {
@@ -1397,9 +1394,7 @@ mod tests {
         };
         let err = WorkflowError::new(
             ows_core::ErrorKind::Fault,
-            ows_core::ProblemDetails::standard(
-                ows_core::StandardErrorType::Runtime,
-            ),
+            ows_core::ProblemDetails::standard(ows_core::StandardErrorType::Runtime),
         );
         set_error_var(&mut ec, &catch, &err);
         assert!(ec.loop_vars.contains_key("err"));

@@ -202,10 +202,7 @@ fn interpolate(pieces: &[Piece], input: &Value, env: &Env) -> Result<Value, Expr
 }
 
 impl ows_core::ExpressionEngine for JqEngine {
-    fn compile(
-        &self,
-        source: &str,
-    ) -> Result<CompiledExpression, ows_core::ExpressionError> {
+    fn compile(&self, source: &str) -> Result<CompiledExpression, ows_core::ExpressionError> {
         let prepared = prepare(source).map_err(ows_core::ExpressionError::from)?;
         Ok(CompiledExpression::new(source, prepared))
     }
@@ -230,7 +227,6 @@ impl ows_core::ExpressionEngine for JqEngine {
         variables: &Map<String, Value>,
     ) -> Result<ExpressionValue, ows_core::ExpressionError> {
         let compiled = self.compile(source)?;
-        evaluate_interp(&compiled, input, variables)
-            .map_err(ows_core::ExpressionError::from)
+        evaluate_interp(&compiled, input, variables).map_err(ows_core::ExpressionError::from)
     }
 }

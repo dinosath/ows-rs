@@ -10,8 +10,9 @@ use dioxus_icons::lucide::{
 };
 use serde_json::{Map, Value, json};
 
-const TASK_TYPES: [&str; 12] =
-    ["call", "do", "emit", "for", "fork", "listen", "raise", "run", "set", "switch", "try", "wait"];
+const TASK_TYPES: [&str; 12] = [
+    "call", "do", "emit", "for", "fork", "listen", "raise", "run", "set", "switch", "try", "wait",
+];
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ValidationState {
@@ -62,13 +63,23 @@ pub struct WorkflowExample {
 
 #[component]
 pub fn WorkflowEditor(
-    definition: String, on_change: EventHandler<String>, on_validate: EventHandler<String>,
-    validation: ValidationState, execution: WorkflowExecution, on_execute: EventHandler<()>, on_import: EventHandler<()>,
-    examples: Vec<WorkflowExample>, on_select_example: EventHandler<String>, on_configure_input: EventHandler<()>,
-    execution_history: Vec<WorkflowExecutionRecord>, notice: Option<String>,
+    definition: String,
+    on_change: EventHandler<String>,
+    on_validate: EventHandler<String>,
+    validation: ValidationState,
+    execution: WorkflowExecution,
+    on_execute: EventHandler<()>,
+    on_import: EventHandler<()>,
+    examples: Vec<WorkflowExample>,
+    on_select_example: EventHandler<String>,
+    on_configure_input: EventHandler<()>,
+    execution_history: Vec<WorkflowExecutionRecord>,
+    notice: Option<String>,
     #[props(default)] initial_execution_id: Option<String>,
-    #[props(default)] database_backend: String, #[props(default)] database_tables: Vec<String>,
-    #[props(default)] database_listening: bool, #[props(default)] database_event: Option<String>,
+    #[props(default)] database_backend: String,
+    #[props(default)] database_tables: Vec<String>,
+    #[props(default)] database_listening: bool,
+    #[props(default)] database_event: Option<String>,
     on_listen_database_event: EventHandler<String>,
 ) -> Element {
     let mut selected_index = use_signal(|| 0_usize);
@@ -93,13 +104,19 @@ pub fn WorkflowEditor(
     let mut pending_insert_edge = use_signal(|| None::<(String, String)>);
     let mut selected_connection = use_signal(|| None::<(String, String)>);
     let mut editor_tab = use_signal(|| {
-        if initial_execution_id.is_some() { "executions".to_string() } else { "editor".to_string() }
+        if initial_execution_id.is_some() {
+            "executions".to_string()
+        } else {
+            "editor".to_string()
+        }
     });
     let mut selected_execution_node = use_signal(|| None::<String>);
     let mut selected_execution_id = use_signal(|| {
-        initial_execution_id
-            .clone()
-            .or_else(|| execution_history.first().map(|record| record.execution_id.clone()))
+        initial_execution_id.clone().or_else(|| {
+            execution_history
+                .first()
+                .map(|record| record.execution_id.clone())
+        })
     });
     let mut logs_open = use_signal(|| false);
     let mut logs_height = use_signal(|| 300.0_f64);
@@ -121,22 +138,35 @@ pub fn WorkflowEditor(
         .find(|record| Some(record.execution_id.as_str()) == selected_execution_id().as_deref())
         .or_else(|| execution_history.first())
         .cloned();
-    let selected_execution_key =
-        selected_execution.as_ref().map(|record| record.execution_id.clone()).unwrap_or_default();
+    let selected_execution_key = selected_execution
+        .as_ref()
+        .map(|record| record.execution_id.clone())
+        .unwrap_or_default();
     let tasks = document["do"].as_array().cloned().unwrap_or_default();
-    let triggers =
-        document["document"]["metadata"]["triggers"].as_array().cloned().unwrap_or_default();
+    let triggers = document["document"]["metadata"]["triggers"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
     let has_visible_nodes =
         tasks.iter().any(task_kind_is_supported) || triggers.iter().any(trigger_kind_is_supported);
     let content_width = (1000.0_f64).max(500.0 + tasks.len() as f64 * 230.0);
     let default_start_x =
         (content_width - (132.0 + tasks.len().saturating_sub(1) as f64 * 230.0)) / 2.0;
     let stored_positions = read_canvas_positions(&document, &tasks, default_start_x);
-    let positions =
-        if node_positions().len() == tasks.len() { node_positions() } else { stored_positions };
+    let positions = if node_positions().len() == tasks.len() {
+        node_positions()
+    } else {
+        stored_positions
+    };
     let picker_positions = positions.clone();
-    let content_width = positions.iter().map(|(x, _)| x + 300.0).fold(content_width, f64::max);
-    let content_height = positions.iter().map(|(_, y)| y + 220.0).fold(900.0_f64, f64::max);
+    let content_width = positions
+        .iter()
+        .map(|(x, _)| x + 300.0)
+        .fold(content_width, f64::max);
+    let content_height = positions
+        .iter()
+        .map(|(_, y)| y + 220.0)
+        .fold(900.0_f64, f64::max);
     let add_position = positions
         .last()
         .map(|(x, y)| (x + 230.0, *y))
@@ -201,7 +231,10 @@ pub fn WorkflowEditor(
             .filter(|(_, (_, target))| target == to)
             .map(|(index, _)| index)
             .collect::<Vec<_>>();
-        let port_index = target_edges.iter().position(|index| *index == edge_index).unwrap_or(0);
+        let port_index = target_edges
+            .iter()
+            .position(|index| *index == edge_index)
+            .unwrap_or(0);
         let port_offsets = input_port_offsets(target_edges.len().max(1));
         to_position.1 += port_offsets[port_index] - 48.0;
         edge_paths.push(connector_path(from_position, to_position));
@@ -228,16 +261,27 @@ pub fn WorkflowEditor(
             edge_paths.push(connector_preview_path(from_position, connecting_pointer()));
         }
     }
-    let selected = if tasks.is_empty() { 0 } else { selected_index().min(tasks.len() - 1) };
+    let selected = if tasks.is_empty() {
+        0
+    } else {
+        selected_index().min(tasks.len() - 1)
+    };
     let selected_task = tasks.get(selected).cloned();
     let selected_trigger = selected_trigger_index().and_then(|index| triggers.get(index).cloned());
     let selected_name = selected_trigger
         .as_ref()
-        .map(|trigger| trigger["name"].as_str().unwrap_or("Database Trigger").to_string())
+        .map(|trigger| {
+            trigger["name"]
+                .as_str()
+                .unwrap_or("Database Trigger")
+                .to_string()
+        })
         .or_else(|| selected_task.as_ref().and_then(task_name))
         .unwrap_or_default();
-    let selected_definition =
-        selected_task.as_ref().and_then(task_definition).unwrap_or_else(|| json!({}));
+    let selected_definition = selected_task
+        .as_ref()
+        .and_then(task_definition)
+        .unwrap_or_else(|| json!({}));
     let selected_type = if let Some(trigger) = selected_trigger.as_ref() {
         trigger["type"].as_str().unwrap_or("database")
     } else {
@@ -292,25 +336,33 @@ pub fn WorkflowEditor(
             notification_dismissed.set(false);
         }
     });
-    let editor_execution_records = if execution.running
-        || execution.execution_id.is_some()
-        || execution.error.is_some()
-    {
-        vec![WorkflowExecutionRecord {
-            execution_id: execution.execution_id.clone().unwrap_or_else(|| "current".to_string()),
-            status: execution.status.clone().unwrap_or_else(|| {
-                if execution.running { "running".to_string() } else { "failed".to_string() }
-            }),
-            started_at: execution.started_at.clone().unwrap_or_default(),
-            duration_ms: execution.duration_ms,
-            input_json: execution.input_json.clone().unwrap_or_else(|| "{}".to_string()),
-            output_json: execution.output.clone(),
-            error: execution.error.clone(),
-            steps: execution.steps.clone(),
-        }]
-    } else {
-        Vec::new()
-    };
+    let editor_execution_records =
+        if execution.running || execution.execution_id.is_some() || execution.error.is_some() {
+            vec![WorkflowExecutionRecord {
+                execution_id: execution
+                    .execution_id
+                    .clone()
+                    .unwrap_or_else(|| "current".to_string()),
+                status: execution.status.clone().unwrap_or_else(|| {
+                    if execution.running {
+                        "running".to_string()
+                    } else {
+                        "failed".to_string()
+                    }
+                }),
+                started_at: execution.started_at.clone().unwrap_or_default(),
+                duration_ms: execution.duration_ms,
+                input_json: execution
+                    .input_json
+                    .clone()
+                    .unwrap_or_else(|| "{}".to_string()),
+                output_json: execution.output.clone(),
+                error: execution.error.clone(),
+                steps: execution.steps.clone(),
+            }]
+        } else {
+            Vec::new()
+        };
 
     rsx! {
         section {
@@ -519,12 +571,11 @@ pub fn WorkflowEditor(
                                     let first = touches[0].client_coordinates();
                                     let second = touches[1].client_coordinates();
                                     let distance = ((second.x - first.x).powi(2) + (second.y - first.y).powi(2)).sqrt();
-                                    if let Some((start_distance, start_zoom)) = pinch_origin() {
-                                        if start_distance > 0.0 && distance > 0.0 {
+                                    if let Some((start_distance, start_zoom)) = pinch_origin()
+                                        && start_distance > 0.0 && distance > 0.0 {
                                             let scale = distance / start_distance;
                                             zoom_percent.set(((start_zoom as f64 * scale).round() as i32).clamp(40, 160));
                                         }
-                                    }
                                 }
                             },
                             ontouchend: move |event| {
@@ -1230,7 +1281,7 @@ pub fn WorkflowEditor(
                                             let new_task = create_task(node_type, &next_tasks);
                                             let new_name = task_name(&new_task).unwrap_or_default();
                                             let insertion = pending_insert_edge();
-                                            let source = insertion.as_ref().map(|edge| edge.0.clone()).or_else(|| pending_add_source());
+                                            let source = insertion.as_ref().map(|edge| edge.0.clone()).or_else(&*pending_add_source);
                                             let new_position = if let Some((from, to)) = insertion.as_ref() {
                                                 let from_position = canvas_node_position(from, &existing_tasks, &existing_positions);
                                                 let to_position = canvas_node_position(to, &existing_tasks, &existing_positions);
@@ -1310,17 +1361,24 @@ pub fn WorkflowEditor(
 
 #[component]
 fn TaskSettingsForm(
-    task_type: String, definition: Value, on_change: EventHandler<Value>,
+    task_type: String,
+    definition: Value,
+    on_change: EventHandler<Value>,
 ) -> Element {
     let call_target = definition["call"].as_str().unwrap_or_default().to_string();
-    let is_custom_target = !call_target.is_empty() && call_target != "http" && call_target != "openapi";
+    let is_custom_target =
+        !call_target.is_empty() && call_target != "http" && call_target != "openapi";
     let mut fields = definition.clone();
-    if task_type == "call" {
-        if let Some(fields) = fields.as_object_mut() {
-            fields.remove("call");
-        }
+    if task_type == "call"
+        && let Some(fields) = fields.as_object_mut()
+    {
+        fields.remove("call");
     }
-    let form_label = if task_type == "call" { "Call options" } else { "Task options" };
+    let form_label = if task_type == "call" {
+        "Call options"
+    } else {
+        "Task options"
+    };
     rsx! {
         div { class: "workflow-task-form",
             if task_type == "call" {
@@ -1333,7 +1391,7 @@ fn TaskSettingsForm(
                             value: if call_target.is_empty() { "".to_string() } else if is_custom_target { "custom".to_string() } else { call_target.clone() },
                             onchange: {
                                 let mut definition = definition.clone();
-                                let on_change = on_change.clone();
+                                let on_change = on_change;
                                 move |event| {
                                     let selected = event.value();
                                     if selected != "custom" {
@@ -1359,7 +1417,7 @@ fn TaskSettingsForm(
                                 value: "{call_target}",
                                 oninput: {
                                     let mut definition = definition.clone();
-                                    let on_change = on_change.clone();
+                                    let on_change = on_change;
                                     move |event| {
                                         definition["call"] = Value::String(event.value());
                                         on_change.call(definition.clone());
@@ -1408,7 +1466,7 @@ fn JsonValueForm(label: String, value: Value, on_change: EventHandler<Value>) ->
                         title: "Add a field",
                         onclick: {
                             let value = value.clone();
-                            let on_change = on_change.clone();
+                            let on_change = on_change;
                             move |_| {
                                 let mut fields = value.as_object().cloned().unwrap_or_default();
                                 let mut index = fields.len() + 1;
@@ -1430,7 +1488,7 @@ fn JsonValueForm(label: String, value: Value, on_change: EventHandler<Value>) ->
                             on_change: {
                                 let key = key.clone();
                                 let value = value.clone();
-                                let on_change = on_change.clone();
+                                let on_change = on_change;
                                 move |updated| {
                                     let mut fields = value.as_object().cloned().unwrap_or_default();
                                     fields.insert(key.clone(), updated);
@@ -1446,7 +1504,7 @@ fn JsonValueForm(label: String, value: Value, on_change: EventHandler<Value>) ->
                             onclick: {
                                 let key = key.clone();
                                 let value = value.clone();
-                                let on_change = on_change.clone();
+                                let on_change = on_change;
                                 move |_| {
                                     let mut fields = value.as_object().cloned().unwrap_or_default();
                                     fields.remove(&key);
@@ -1468,7 +1526,7 @@ fn JsonValueForm(label: String, value: Value, on_change: EventHandler<Value>) ->
                         r#type: "button",
                         onclick: {
                             let value = value.clone();
-                            let on_change = on_change.clone();
+                            let on_change = on_change;
                             move |_| {
                                 let mut items = value.as_array().cloned().unwrap_or_default();
                                 items.push(items.first().map(default_form_value).unwrap_or_else(|| json!({})));
@@ -1485,9 +1543,8 @@ fn JsonValueForm(label: String, value: Value, on_change: EventHandler<Value>) ->
                             label: format!("Item {}", index + 1),
                             value: child.clone(),
                             on_change: {
-                                let index = index;
                                 let value = value.clone();
-                                let on_change = on_change.clone();
+                                let on_change = on_change;
                                 move |updated| {
                                     let mut items = value.as_array().cloned().unwrap_or_default();
                                     if let Some(item) = items.get_mut(index) { *item = updated; }
@@ -1501,7 +1558,7 @@ fn JsonValueForm(label: String, value: Value, on_change: EventHandler<Value>) ->
                             title: "Remove item",
                             onclick: {
                                 let value = value.clone();
-                                let on_change = on_change.clone();
+                                let on_change = on_change;
                                 move |_| {
                                     let mut items = value.as_array().cloned().unwrap_or_default();
                                     if index < items.len() { items.remove(index); }
@@ -1560,9 +1617,8 @@ fn JsonValueForm(label: String, value: Value, on_change: EventHandler<Value>) ->
                             oninput: move |event| {
                                 if integer {
                                     if let Ok(value) = event.value().parse::<i64>() { on_change.call(Value::Number(value.into())); }
-                                } else if let Ok(value) = event.value().parse::<f64>() {
-                                    if let Some(value) = serde_json::Number::from_f64(value) { on_change.call(Value::Number(value)); }
-                                }
+                                } else if let Ok(value) = event.value().parse::<f64>()
+                                    && let Some(value) = serde_json::Number::from_f64(value) { on_change.call(Value::Number(value)); }
                             },
                         }
                     }
@@ -1620,7 +1676,10 @@ fn form_field_label(key: &str) -> String {
 }
 
 fn is_multiline_form_field(key: &str) -> bool {
-    matches!(key, "code" | "body" | "as" | "expression" | "when" | "until" | "command")
+    matches!(
+        key,
+        "code" | "body" | "as" | "expression" | "when" | "until" | "command"
+    )
 }
 
 fn default_form_value(value: &Value) -> Value {
@@ -1637,11 +1696,19 @@ fn default_form_value(value: &Value) -> Value {
 
 #[component]
 fn DatabaseTriggerSettings(
-    trigger: Value, backend: String, tables: Vec<String>, listening: bool,
-    event_output: Option<String>, on_listen: EventHandler<String>, on_change: EventHandler<Value>,
+    trigger: Value,
+    backend: String,
+    tables: Vec<String>,
+    listening: bool,
+    event_output: Option<String>,
+    on_listen: EventHandler<String>,
+    on_change: EventHandler<Value>,
 ) -> Element {
     let table = trigger["table"].as_str().unwrap_or("").to_string();
-    let name = trigger["name"].as_str().unwrap_or("Database Trigger").to_string();
+    let name = trigger["name"]
+        .as_str()
+        .unwrap_or("Database Trigger")
+        .to_string();
     let events = trigger["events"].as_array().cloned().unwrap_or_else(|| {
         vec![
             Value::String("INSERT".into()),
@@ -1800,7 +1867,12 @@ fn execution_data_table(value: &str) -> Option<(Vec<String>, Vec<Vec<String>>)> 
             let object = row.as_object().expect("rows were checked as objects");
             columns
                 .iter()
-                .map(|column| object.get(column).map(format_table_value).unwrap_or_default())
+                .map(|column| {
+                    object
+                        .get(column)
+                        .map(format_table_value)
+                        .unwrap_or_default()
+                })
                 .collect::<Vec<_>>()
         })
         .collect();
@@ -1845,7 +1917,8 @@ fn ExecutionDataTable(columns: Vec<String>, rows: Vec<Vec<String>>) -> Element {
 
 #[component]
 pub fn WorkflowLogs(
-    records: Vec<WorkflowExecutionRecord>, empty_message: String,
+    records: Vec<WorkflowExecutionRecord>,
+    empty_message: String,
     #[props(default)] on_step_selected: Option<EventHandler<Option<String>>>,
     #[props(default)] initial_execution_id: Option<String>,
 ) -> Element {
@@ -1864,19 +1937,28 @@ pub fn WorkflowLogs(
     let selected_step = selected_record
         .as_ref()
         .and_then(|record| selected_step_index().and_then(|index| record.steps.get(index)));
-    let detail_title =
-        selected_step.map(|step| step.name.as_str()).unwrap_or("When clicking ‘Execute workflow’");
+    let detail_title = selected_step
+        .map(|step| step.name.as_str())
+        .unwrap_or("When clicking ‘Execute workflow’");
     let detail_status = selected_step
         .map(|step| step.status.as_str())
-        .or_else(|| selected_record.as_ref().map(|record| record.status.as_str()))
+        .or_else(|| {
+            selected_record
+                .as_ref()
+                .map(|record| record.status.as_str())
+        })
         .unwrap_or("");
     let input_data = if selected_step.is_none() {
-        selected_record.as_ref().map(|record| record.input_json.as_str())
+        selected_record
+            .as_ref()
+            .map(|record| record.input_json.as_str())
     } else {
         selected_step.and_then(|step| step.input_json.as_deref())
     };
     let output_data = if selected_step.is_none() {
-        selected_record.as_ref().and_then(|record| record.output_json.as_deref())
+        selected_record
+            .as_ref()
+            .and_then(|record| record.output_json.as_deref())
     } else {
         selected_step.and_then(|step| step.output_json.as_deref())
     };
@@ -2064,18 +2146,26 @@ fn read_canvas_connections(document: &Value, tasks: &[Value]) -> Vec<(String, St
                 let from = edge["from"].as_str()?;
                 let to = edge["to"].as_str()?;
                 let source = connection_source_node(from);
-                let source_exists =
-                    tasks.iter().any(|task| task_name(task).as_deref() == Some(source));
-                let target_exists = tasks.iter().any(|task| task_name(task).as_deref() == Some(to));
+                let source_exists = tasks
+                    .iter()
+                    .any(|task| task_name(task).as_deref() == Some(source));
+                let target_exists = tasks
+                    .iter()
+                    .any(|task| task_name(task).as_deref() == Some(to));
                 (source_exists && target_exists).then(|| (from.to_owned(), to.to_owned()))
             })
             .collect();
     }
-    tasks.windows(2).filter_map(|pair| Some((task_name(&pair[0])?, task_name(&pair[1])?))).collect()
+    tasks
+        .windows(2)
+        .filter_map(|pair| Some((task_name(&pair[0])?, task_name(&pair[1])?)))
+        .collect()
 }
 
 fn input_port_offsets(count: usize) -> Vec<f64> {
-    (0..count).map(|index| 96.0 * (index + 1) as f64 / (count + 1) as f64).collect()
+    (0..count)
+        .map(|index| 96.0 * (index + 1) as f64 / (count + 1) as f64)
+        .collect()
 }
 
 fn output_port_offsets(count: usize) -> Vec<f64> {
@@ -2083,7 +2173,11 @@ fn output_port_offsets(count: usize) -> Vec<f64> {
 }
 
 fn connection_source_id(name: &str, output_index: usize) -> String {
-    if output_index == 0 { name.to_owned() } else { format!("{name}::{output_index}") }
+    if output_index == 0 {
+        name.to_owned()
+    } else {
+        format!("{name}::{output_index}")
+    }
 }
 
 fn split_connection_source(source: &str) -> (&str, usize) {
@@ -2101,9 +2195,11 @@ fn node_output_count(task: &Value) -> usize {
     let definition = task_definition(task).unwrap_or(Value::Null);
     let kind = task_type(&definition).unwrap_or_default();
     match kind {
-        "switch" => {
-            definition["switch"].as_array().map(|branches| branches.len() + 1).unwrap_or(2).max(2)
-        }
+        "switch" => definition["switch"]
+            .as_array()
+            .map(|branches| branches.len() + 1)
+            .unwrap_or(2)
+            .max(2),
         "for" | "try" => 2,
         _ => 1,
     }
@@ -2144,7 +2240,9 @@ fn node_output_label(kind: &str, index: usize, count: usize) -> String {
 }
 
 fn canvas_node_position(
-    name: &str, tasks: &[Value], positions: &[(f64, f64)],
+    name: &str,
+    tasks: &[Value],
+    positions: &[(f64, f64)],
 ) -> Option<(f64, f64)> {
     let name = connection_source_node(name);
     tasks
@@ -2176,13 +2274,20 @@ fn add_canvas_connection(document: &mut Value, from: &str, to: &str) -> bool {
     }
     let tasks = document["do"].as_array().cloned().unwrap_or_default();
     let source_node = connection_source_node(from);
-    let is_valid_source = tasks.iter().any(|task| task_name(task).as_deref() == Some(source_node));
-    let is_valid_target = tasks.iter().any(|task| task_name(task).as_deref() == Some(to));
+    let is_valid_source = tasks
+        .iter()
+        .any(|task| task_name(task).as_deref() == Some(source_node));
+    let is_valid_target = tasks
+        .iter()
+        .any(|task| task_name(task).as_deref() == Some(to));
     if !is_valid_source || !is_valid_target {
         return false;
     }
     let mut connections = read_canvas_connections(document, &tasks);
-    if connections.iter().any(|edge| edge.0 == from && edge.1 == to) {
+    if connections
+        .iter()
+        .any(|edge| edge.0 == from && edge.1 == to)
+    {
         return false;
     }
     let mut pending = vec![to.to_owned()];
@@ -2233,7 +2338,11 @@ fn remove_canvas_connections(document: &mut Value, removed: &str, tasks: &[Value
         .collect::<Vec<_>>();
     for from in &incoming {
         for to in &outgoing {
-            if from != to && !remaining.iter().any(|edge| edge.0 == *from && edge.1 == *to) {
+            if from != to
+                && !remaining
+                    .iter()
+                    .any(|edge| edge.0 == *from && edge.1 == *to)
+            {
                 remaining.push((from.clone(), to.clone()));
             }
         }
@@ -2264,10 +2373,9 @@ fn rename_canvas_node(document: &mut Value, old: &str, new: &str) {
     write_canvas_connections(document, &connections);
     if let Some(positions) =
         document["document"]["metadata"]["ferrisflow"]["canvas"]["positions"].as_object_mut()
+        && let Some(position) = positions.remove(old)
     {
-        if let Some(position) = positions.remove(old) {
-            positions.insert(new.to_owned(), position);
-        }
+        positions.insert(new.to_owned(), position);
     }
 }
 
@@ -2281,8 +2389,12 @@ fn write_canvas_connections(document: &mut Value, connections: &[(String, String
     if !document["document"]["metadata"]["ferrisflow"]["canvas"].is_object() {
         document["document"]["metadata"]["ferrisflow"]["canvas"] = json!({});
     }
-    document["document"]["metadata"]["ferrisflow"]["canvas"]["connections"] =
-        Value::Array(connections.iter().map(|(from, to)| json!({"from":from,"to":to})).collect());
+    document["document"]["metadata"]["ferrisflow"]["canvas"]["connections"] = Value::Array(
+        connections
+            .iter()
+            .map(|(from, to)| json!({"from":from,"to":to}))
+            .collect(),
+    );
 }
 
 fn node_is_disabled(document: &Value, name: &str) -> bool {
@@ -2313,7 +2425,10 @@ fn duplicate_task(document: &mut Value, index: usize) -> Option<usize> {
     let original = tasks.get(index)?.clone();
     let name = task_name(&original)?;
     let definition = task_definition(&original)?;
-    let existing = tasks.iter().filter_map(task_name).collect::<std::collections::HashSet<_>>();
+    let existing = tasks
+        .iter()
+        .filter_map(task_name)
+        .collect::<std::collections::HashSet<_>>();
     let base = format!("{name}-copy");
     let mut duplicate_name = base.clone();
     let mut suffix = 2;
@@ -2361,18 +2476,28 @@ fn connector_preview_path(from: (f64, f64), to: (f64, f64)) -> String {
 
 fn fit_zoom(positions: &[(f64, f64)], add: (f64, f64)) -> i32 {
     let min_x = positions.iter().map(|(x, _)| *x).fold(add.0, f64::min);
-    let max_x = positions.iter().map(|(x, _)| *x + 132.0).fold(add.0 + 30.0, f64::max);
+    let max_x = positions
+        .iter()
+        .map(|(x, _)| *x + 132.0)
+        .fold(add.0 + 30.0, f64::max);
     let min_y = positions.iter().map(|(_, y)| *y).fold(add.1, f64::min);
-    let max_y = positions.iter().map(|(_, y)| *y + 140.0).fold(add.1 + 140.0, f64::max);
+    let max_y = positions
+        .iter()
+        .map(|(_, y)| *y + 140.0)
+        .fold(add.1 + 140.0, f64::max);
     let width = (max_x - min_x + 80.0).max(360.0);
     let height = (max_y - min_y + 80.0).max(240.0);
     let width_zoom = 1120.0 / width * 100.0;
     let height_zoom = 560.0 / height * 100.0;
-    width_zoom.min(height_zoom).min(100.0).round().clamp(45.0, 100.0) as i32
+    width_zoom
+        .min(height_zoom)
+        .min(100.0)
+        .round()
+        .clamp(45.0, 100.0) as i32
 }
 
 fn parse_document(raw: &str) -> Result<Value, String> {
-    let mut value: Value = if raw.trim().is_empty() {
+    let value: Value = if raw.trim().is_empty() {
         starter_document()
     } else {
         serde_json::from_str(raw).map_err(|error| error.to_string())?
@@ -2411,17 +2536,20 @@ fn trigger_kind_is_supported(trigger: &Value) -> bool {
 fn replace_task_definition(document: &mut Value, index: usize, name: &str, definition: Value) {
     let mut task = Map::new();
     task.insert(name.to_owned(), definition);
-    if let Some(tasks) = document["do"].as_array_mut() {
-        if let Some(slot) = tasks.get_mut(index) {
-            *slot = Value::Object(task);
-        }
+    if let Some(tasks) = document["do"].as_array_mut()
+        && let Some(slot) = tasks.get_mut(index)
+    {
+        *slot = Value::Object(task);
     }
 }
 
 fn create_task(kind: &str, tasks: &[Value]) -> Value {
     let mut index = tasks.len() + 1;
     let mut name = format!("{kind}-{index}");
-    while tasks.iter().any(|task| task_name(task).as_deref() == Some(name.as_str())) {
+    while tasks
+        .iter()
+        .any(|task| task_name(task).as_deref() == Some(name.as_str()))
+    {
         index += 1;
         name = format!("{kind}-{index}");
     }

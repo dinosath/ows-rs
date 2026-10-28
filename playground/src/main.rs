@@ -505,7 +505,7 @@ async fn call_http(
     }
 }
 
-fn task_parts<'a>(task: &'a Value) -> Result<(String, String, &'a Value), String> {
+fn task_parts(task: &Value) -> Result<(String, String, &Value), String> {
     let object = task
         .as_object()
         .ok_or_else(|| "task must be an object".to_string())?;
@@ -621,13 +621,12 @@ fn App() -> Element {
                         definition: definition(),
                         on_change: move |value: String| {
                             validation.set(validate_ows(&value));
-                            if let Ok(document) = serde_json::from_str::<serde_json::Value>(&value) {
-                                if document.get("document").is_some_and(serde_json::Value::is_object)
+                            if let Ok(document) = serde_json::from_str::<serde_json::Value>(&value)
+                                && document.get("document").is_some_and(serde_json::Value::is_object)
                                     && document.get("do").is_some_and(serde_json::Value::is_array)
                                 {
                                     definition.set(value);
                                 }
-                            }
                             notice.set(None);
                         },
                         on_validate: move |value: String| {
@@ -989,18 +988,17 @@ mod tests {
             &Map::new(),
         )
         .unwrap();
-        assert_eq!(endpoint, "https://brightnovels.com/series/sample-novel/chapters");
+        assert_eq!(
+            endpoint,
+            "https://brightnovels.com/series/sample-novel/chapters"
+        );
 
         let input = json!({ "novel_url": "https://brightnovels.com/series/sample-novel" });
         let response = Value::String("series html".to_string());
         let mut variables = Map::new();
         variables.insert("output".to_string(), response.clone());
-        let transformed = evaluate_expression(
-            "$input + { seriesHtml: $output }",
-            &input,
-            &variables,
-        )
-        .unwrap();
+        let transformed =
+            evaluate_expression("$input + { seriesHtml: $output }", &input, &variables).unwrap();
         assert_eq!(transformed["seriesHtml"], response);
         assert_eq!(transformed["novel_url"], input["novel_url"]);
     }

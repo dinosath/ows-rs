@@ -28,9 +28,7 @@ impl FlakyRunner {
         if n < self.fail_count {
             Err(WorkflowError::new(
                 ows_core::ErrorKind::Communication,
-                ows_core::ProblemDetails::standard(
-                    ows_core::StandardErrorType::Communication,
-                ),
+                ows_core::ProblemDetails::standard(ows_core::StandardErrorType::Communication),
             ))
         } else {
             Ok(ProcessResult {
@@ -614,8 +612,7 @@ do:
     tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     broker
         .publish(
-            &ows_core::EventMessage::new("1", "src", "com.example.b")
-                .with_data(json!({"n":2})),
+            &ows_core::EventMessage::new("1", "src", "com.example.b").with_data(json!({"n":2})),
         )
         .await
         .unwrap();

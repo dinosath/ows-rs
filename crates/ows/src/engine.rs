@@ -801,10 +801,7 @@ pub(crate) fn eval_interpolation(
     }
 }
 
-fn to_expression_error(
-    e: ows_core::ExpressionError,
-    task: Option<&CompiledTask>,
-) -> WorkflowError {
+fn to_expression_error(e: ows_core::ExpressionError, task: Option<&CompiledTask>) -> WorkflowError {
     let mut err = WorkflowError::new(
         ErrorKind::Expression,
         ProblemDetails::standard(StandardErrorType::Expression).with_detail(e.to_string()),

@@ -8,9 +8,7 @@
 //! semantics.
 #![allow(clippy::result_large_err)]
 
-use ows_core::{
-    ScheduleTrigger, ScheduledExecution, ScheduledHandle, Scheduler, WorkflowError,
-};
+use ows_core::{ScheduleTrigger, ScheduledExecution, ScheduledHandle, Scheduler, WorkflowError};
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -78,10 +76,9 @@ impl CronSchedule {
     /// Parses a cron expression.
     pub fn parse(expression: &str) -> Result<Self, WorkflowError> {
         let schedule = cron::Schedule::from_str(expression).map_err(|e| {
-            let problem = ows_core::ProblemDetails::standard(
-                ows_core::StandardErrorType::Validation,
-            )
-            .with_detail(format!("invalid cron expression `{expression}`: {e}"));
+            let problem =
+                ows_core::ProblemDetails::standard(ows_core::StandardErrorType::Validation)
+                    .with_detail(format!("invalid cron expression `{expression}`: {e}"));
             WorkflowError::new(ows_core::ErrorKind::Schema, problem)
         })?;
         Ok(Self {

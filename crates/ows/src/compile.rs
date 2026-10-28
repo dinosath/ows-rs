@@ -589,9 +589,7 @@ fn resolve_retry(
     }))
 }
 
-fn build_schedule_trigger(
-    s: &dsl_models::WorkflowScheduleDefinition,
-) -> ows_core::ScheduleTrigger {
+fn build_schedule_trigger(s: &dsl_models::WorkflowScheduleDefinition) -> ows_core::ScheduleTrigger {
     use ows_core::ScheduleTrigger;
     if let Some(every) = &s.every {
         ScheduleTrigger::Every(Duration::from_millis(every.total_milliseconds()))
@@ -655,8 +653,7 @@ fn runtime_err(category: &str, msg: String) -> WorkflowError {
     };
     WorkflowError::new(
         kind,
-        ows_core::ProblemDetails::standard(ows_core::StandardErrorType::Runtime)
-            .with_detail(msg),
+        ows_core::ProblemDetails::standard(ows_core::StandardErrorType::Runtime).with_detail(msg),
     )
 }
 

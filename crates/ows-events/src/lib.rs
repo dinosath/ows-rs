@@ -8,9 +8,7 @@
 
 use std::sync::Arc;
 
-use ows_core::{
-    EventConsumer, EventMessage, EventPublisher, EventSubscription, WorkflowError,
-};
+use ows_core::{EventConsumer, EventMessage, EventPublisher, EventSubscription, WorkflowError};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tokio::sync::{mpsc, Mutex};

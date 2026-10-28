@@ -10,11 +10,7 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(
-    name = "ows",
-    about = "Open Workflow Specification runtime",
-    version
-)]
+#[command(name = "ows", about = "Open Workflow Specification runtime", version)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -122,9 +118,7 @@ async fn main() {
                 }
                 std::process::exit(1);
             }
-            let runtime = ows::Runtime::builder()
-                .build()
-                .expect("runtime build");
+            let runtime = ows::Runtime::builder().build().expect("runtime build");
             let compiled = runtime.compile(&def).unwrap_or_else(|e| {
                 eprintln!("error: {e}");
                 std::process::exit(1);
@@ -203,9 +197,8 @@ async fn main() {
             }
 
             if catalog_files && catalogs.is_empty() {
-                builder = builder.with_catalog_resolver(std::sync::Arc::new(
-                    ows::catalog::FileCatalogResolver,
-                ));
+                builder = builder
+                    .with_catalog_resolver(std::sync::Arc::new(ows::catalog::FileCatalogResolver));
             } else if !catalogs.is_empty() {
                 let mut resolver = ows::catalog::StaticCatalogResolver::new();
                 for spec in &catalogs {
@@ -217,8 +210,8 @@ async fn main() {
                         eprintln!("error: read catalog `{path}`: {e}");
                         std::process::exit(1);
                     });
-                    let collection = ows::catalog::parse_catalog_document(&text)
-                        .unwrap_or_else(|e| {
+                    let collection =
+                        ows::catalog::parse_catalog_document(&text).unwrap_or_else(|e| {
                             eprintln!("error: parse catalog `{path}`: {e}");
                             std::process::exit(1);
                         });
@@ -295,8 +288,7 @@ async fn main() {
                     std::env::var("OWS_SPEC_REPO").unwrap_or_else(|_| "specification".to_string());
                 PathBuf::from(repo).join("ctk").join("features")
             });
-            let report =
-                ows_cli::conformance::run_ctk_with(&ctk_dir, include_network).await;
+            let report = ows_cli::conformance::run_ctk_with(&ctk_dir, include_network).await;
             if let Some(out) = output {
                 let text = serde_json::to_string_pretty(&report).unwrap();
                 std::fs::write(out, text).expect("write report");
@@ -324,9 +316,7 @@ fn init_run_logging() {
 /// JSON is valid YAML, so accepting YAML here also accepts structured JSON.
 /// Reading until EOF keeps the prompt useful for nested objects and arrays;
 /// finish interactive input with Ctrl-D.
-fn prompt_for_input(
-    def: &ows_dsl::models::workflow::WorkflowDefinition,
-) -> serde_json::Value {
+fn prompt_for_input(def: &ows_dsl::models::workflow::WorkflowDefinition) -> serde_json::Value {
     eprintln!("This workflow declares input.");
     if let Some(schema) = def.input.as_ref().and_then(|input| input.schema.as_ref()) {
         if let Ok(schema) = serde_yaml::to_string(schema) {

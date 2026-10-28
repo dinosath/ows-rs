@@ -78,8 +78,7 @@ async fn runtime_resolves_an_http_catalog_end_to_end() {
         .build()
         .unwrap();
 
-    let def =
-        ows_dsl::from_yaml(&workflow(&format!("http://{addr}/catalog.json"))).unwrap();
+    let def = ows_dsl::from_yaml(&workflow(&format!("http://{addr}/catalog.json"))).unwrap();
     let wf = runtime.register_definition_resolved(&def).await.unwrap();
     let err = runtime.run(wf, Value::Null).await.unwrap_err();
     assert_eq!(err.problem.type_, "https://example.com/errors/catalog");
@@ -110,8 +109,7 @@ async fn http_catalog_fetch_failure_surfaces() {
         .build()
         .unwrap();
     let def =
-        ows_dsl::from_yaml(&workflow(&format!("http://127.0.0.1:{port}/catalog.json")))
-            .unwrap();
+        ows_dsl::from_yaml(&workflow(&format!("http://127.0.0.1:{port}/catalog.json"))).unwrap();
     let err = runtime.resolve_definition(&def).await.unwrap_err();
     assert_eq!(err.kind, ErrorKind::Communication);
 }

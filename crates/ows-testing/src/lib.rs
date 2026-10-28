@@ -116,10 +116,8 @@ impl ServiceInvoker for FakeServiceInvoker {
             .ok_or_else(|| {
                 WorkflowError::new(
                     ows_core::ErrorKind::Communication,
-                    ows_core::ProblemDetails::standard(
-                        ows_core::StandardErrorType::Communication,
-                    )
-                    .with_detail(format!("no stub for `{key}`")),
+                    ows_core::ProblemDetails::standard(ows_core::StandardErrorType::Communication)
+                        .with_detail(format!("no stub for `{key}`")),
                 )
             })
     }

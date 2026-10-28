@@ -1,31 +1,33 @@
-[workspace]
-resolver = "2"
-members = [
-    "crates/ows-runtime-core",
-    "crates/ows-runtime-expressions",
-    "crates/ows-runtime-dsl",
-    "crates/ows-runtime-events",
-    "crates/ows-runtime-scheduler",
-    "crates/ows-runtime-observability",
-    "crates/ows-runtime-observability-otel",
-    "crates/ows-runtime-stores",
-    "crates/ows-runtime",
-    "crates/ows-runtime-testing",
-    "crates/ows-runtime-cli",
-    "examples",
-]
-default-members = [
-    "crates/ows-runtime",
-    "crates/ows-runtime-testing",
-    "crates/ows-runtime-cli",
-]
-
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/open-workflow-specification/sdk-rust"
 rust-version = "1.97"
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/ows-core",
+    "crates/ows-expressions",
+    "crates/ows-dsl",
+    "crates/ows-events",
+    "crates/ows-scheduler",
+    "crates/ows-observability",
+    "crates/ows-observability-otel",
+    "crates/ows-stores",
+    "crates/ows",
+    "crates/ows-testing",
+    "crates/ows-cli",
+    "crates/ows-workflow-editor",
+    "playground",
+    "examples",
+]
+default-members = [
+    "crates/ows",
+    "crates/ows-testing",
+    "crates/ows-cli",
+]
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }

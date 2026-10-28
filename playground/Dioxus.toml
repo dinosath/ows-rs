@@ -1,0 +1,17 @@
+[application]
+name = "ows-playground"
+out_dir = "dist"
+asset_dir = "public"
+
+[web.app]
+title = "OWS Workflow Playground"
+
+[web.watcher]
+reload_html = true
+watch_path = ["src", "public", "../crates/ows-workflow-editor/src"]
+
+[web.resource]
+style = ["./assets/main.css"]
+
+[web.resource.dev]
+style = ["./assets/main.css"]

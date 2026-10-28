@@ -15,18 +15,18 @@ cargo test --workspace                     # default features
 
 ## Test layout
 
-- **Unit tests** live next to each component (e.g. `ows-runtime-expressions`
+- **Unit tests** live next to each component (e.g. `ows-expressions`
   has lexer/parser/evaluator tests).
 - **Integration tests** exercise complete workflow execution
-  (`crates/ows-runtime/tests/`).
+  (`crates/ows/tests/`).
 - **Property tests** use `proptest` for expression evaluation
-  (`ows-runtime-expressions/tests/property.rs`).
+  (`ows-expressions/tests/property.rs`).
 - **Conformance tests** run the OWS CTK (`docs/conformance.md`).
 - **Regression tests** are added for every discovered bug.
 
 ## Deterministic helpers
 
-The `ows-runtime-testing` crate provides:
+The `ows-testing` crate provides:
 
 - `test_runtime()` — a runtime with a deterministic clock and seeded RNG.
 - `FakeServiceInvoker` — scripted `ServiceInvoker` responses for `call` tests.
@@ -51,11 +51,11 @@ Line coverage of the runtime library crates is measured with
 ./scripts/coverage.sh
 ```
 
-The coverage gate covers the runtime library crates (`ows-runtime-core`,
-`ows-runtime-expressions`, `ows-runtime-dsl`, `ows-runtime-events`,
-`ows-runtime-scheduler`, `ows-runtime-observability`, `ows-runtime`). The thin
-CLI wrapper (`ows-runtime-cli`) and the test-support crate
-(`ows-runtime-testing`) are excluded from the gate because they are thin
+The coverage gate covers the runtime library crates (`ows-core`,
+`ows-expressions`, `ows-dsl`, `ows-events`,
+`ows-scheduler`, `ows-observability`, `ows`). The thin
+CLI wrapper (`ows-cli`) and the test-support crate
+(`ows-testing`) are excluded from the gate because they are thin
 wrappers/helpers; they still have their own tests.
 
 ## Determinism

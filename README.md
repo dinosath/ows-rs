@@ -1,9 +1,9 @@
-# ows-runtime-rust
+# ows-rust
 
 A production-grade, library-first Rust runtime for the
 [Open Workflow Specification](https://open-workflow-specification.org/) (OWS).
 
-`ows-runtime-rust` loads OWS workflow definitions (YAML/JSON), validates them,
+`ows-rust` loads OWS workflow definitions (YAML/JSON), validates them,
 compiles them into an executable internal representation, and executes them
 asynchronously with support for runtime expressions, tasks, events, scheduling,
 retries, timeouts, cancellation and observability. The execution engine is
@@ -28,10 +28,10 @@ those are adapters behind stable core traits.
   Network scenarios are skipped by default and can be enabled with
   `--include-network`.
 - **Durability & observability**: durable `ExecutionStore` adapters (SQLite,
-  PostgreSQL, Redis) live in `ows-runtime-stores`, and the engine persists each
+  PostgreSQL, Redis) live in `ows-stores`, and the engine persists each
   execution's start record, per-task checkpoints, terminal phase and lifecycle
   events through the configured store, so interrupted executions can be resumed
-  with `Runtime::resume`. `ows-runtime-observability-otel` exports lifecycle
+  with `Runtime::resume`. `ows-observability-otel` exports lifecycle
   logs, spans and metrics over OTLP/HTTP JSON, and OTLP/gRPC behind the
   `otlp-grpc` feature.
 - **Experimental / opt-in transports**: the `grpc` adapter targets gRPC services
@@ -50,19 +50,19 @@ This is a Cargo workspace. The runtime is library-first; a thin CLI and a
 conformance runner sit on top of the library.
 
 ```text
-ows-runtime/
+ows/
 ├── crates/
-│   ├── ows-runtime-core/          # core traits, errors, policy, clocks, stores
-│   ├── ows-runtime-expressions/   # sandboxed jq-subset expression engine
-│   ├── ows-runtime-dsl/           # parsing + validation on the official SDK
-│   ├── ows-runtime-events/        # CloudEvents, matching, in-memory broker
-│   ├── ows-runtime-scheduler/     # scheduling abstractions + cron
-│   ├── ows-runtime-observability/ # tracing + lifecycle event emission
-│   ├── ows-runtime-observability-otel/ # OTLP/HTTP + OTLP/gRPC exporters
-│   ├── ows-runtime-stores/        # durable ExecutionStore adapters (SQLite/Postgres/Redis)
-│   ├── ows-runtime/               # compilation + execution engine
-│   ├── ows-runtime-testing/       # deterministic test helpers and fakes
-│   └── ows-runtime-cli/           # validate / compile / run / conformance
+│   ├── ows-core/          # core traits, errors, policy, clocks, stores
+│   ├── ows-expressions/   # sandboxed jq-subset expression engine
+│   ├── ows-dsl/           # parsing + validation on the official SDK
+│   ├── ows-events/        # CloudEvents, matching, in-memory broker
+│   ├── ows-scheduler/     # scheduling abstractions + cron
+│   ├── ows-observability/ # tracing + lifecycle event emission
+│   ├── ows-observability-otel/ # OTLP/HTTP + OTLP/gRPC exporters
+│   ├── ows-stores/        # durable ExecutionStore adapters (SQLite/Postgres/Redis)
+│   ├── ows/               # compilation + execution engine
+│   ├── ows-testing/       # deterministic test helpers and fakes
+│   └── ows-cli/           # validate / compile / run / conformance
 ├── tests/
 │   ├── conformance/               # CTK runner and fixtures
 │   ├── integration/               # workflow execution tests
@@ -102,7 +102,7 @@ cargo test --workspace
 ## Basic usage
 
 ```rust,ignore
-use ows_runtime::{Runtime, Workflow};
+use ows::{Runtime, Workflow};
 
 let runtime = Runtime::new();
 let workflow = Workflow::from_yaml(yaml)?;
@@ -112,7 +112,7 @@ let output = runtime.run(&workflow, input).await?;
 For custom invokers, policies, clocks, or adapters, use the builder API:
 
 ```rust,ignore
-use ows_runtime::Runtime;
+use ows::Runtime;
 
 let runtime = Runtime::builder().register_function("name", invoker).build()?;
 ```
@@ -132,8 +132,8 @@ do:
 ```
 
 ```rust,ignore
-let def = ows_runtime_dsl::from_yaml(yaml)?;
-let report = ows_runtime_dsl::validate(&def);
+let def = ows_dsl::from_yaml(yaml)?;
+let report = ows_dsl::validate(&def);
 assert!(report.is_valid());
 
 let runtime = Runtime::builder().build()?;
@@ -146,21 +146,32 @@ assert_eq!(out, json!({ "greeting": "Hello, World!" }));
 
 ```sh
 # A thin wrapper around the library.
-cargo run -p ows-runtime-cli -- validate workflow.yaml
-cargo run -p ows-runtime-cli -- compile workflow.yaml
-cargo run -p ows-runtime-cli -- run workflow.yaml --input input.yaml
-cargo run -p ows-runtime-cli -- conformance --ctk <path-to-ctk-features>
+cargo run -p ows-cli -- validate workflow.yaml
+cargo run -p ows-cli -- compile workflow.yaml
+cargo run -p ows-cli -- run workflow.yaml --input input.yaml
+cargo run -p ows-cli -- conformance --ctk <path-to-ctk-features>
 ```
 
 `run` accepts the same opt-ins as the library, so capabilities stay
 deny-by-default:
 
 ```sh
-cargo run -p ows-runtime-cli -- run workflow.yaml \
+cargo run -p ows-cli -- run workflow.yaml \
   --allow-network \
   --allow-scripts \
   --secret token=abc123 \
   --catalog https://catalog.example/components=./catalog.yaml
+```
+
+## Playground
+
+Open the [OWS workflow playground on GitHub Pages](https://dinosath.github.io/ows-rs/).
+To run it locally, install the Dioxus CLI once, then run this from the
+repository root (no `cd playground` needed):
+
+```sh
+cargo install dioxus-cli --version 0.7.10 --locked
+dx serve --package ows-playground --platform web
 ```
 
 ## Testing
@@ -211,10 +222,10 @@ Roadmap items implemented:
   consumer, with a cancellable `ScheduleSet`.
 - Process execution: an opt-in `TokioProcessRunner` runs `run` shell/script
   tasks (and containers via Docker). The default remains deny-by-default.
-- Durable execution via `ExecutionStore` adapters in `ows-runtime-stores`
+- Durable execution via `ExecutionStore` adapters in `ows-stores`
   (SQLite by default; PostgreSQL and Redis behind the `postgres`/`redis`
   features), including per-task **checkpointing and `Runtime::resume`**.
-- OpenTelemetry integration crate (`ows-runtime-observability-otel`) that
+- OpenTelemetry integration crate (`ows-observability-otel`) that
   exports lifecycle events as OTLP/HTTP JSON **logs, spans and metrics**, plus
   OTLP/gRPC exporters behind the `otlp-grpc` feature.
 - `listen` `one`/`any`/`all` with `foreach`, the `until` stop condition,

@@ -1,0 +1,16 @@
+[package]
+name = "ows-dsl"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Parsing, serialization and validation of OWS workflow definitions"
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+regex = { workspace = true }
+thiserror = { workspace = true }
+serverless_workflow_core = { workspace = true }

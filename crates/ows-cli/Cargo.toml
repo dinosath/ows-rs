@@ -1,0 +1,24 @@
+[package]
+name = "ows-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "CLI for the OWS runtime"
+repository.workspace = true
+
+[[bin]]
+name = "ows"
+path = "src/main.rs"
+doc = false
+
+[dependencies]
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+tokio = { workspace = true }
+tracing-subscriber = { workspace = true }
+ows-core = { path = "../ows-core" }
+ows-dsl = { path = "../ows-dsl" }
+ows = { path = "../ows", features = ["http", "validation"] }

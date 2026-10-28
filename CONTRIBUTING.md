@@ -25,12 +25,25 @@ cargo doc --workspace --all-features
   `cargo test --workspace --all-features` both pass.
 - Run `cargo fmt --all` and keep `clippy -D warnings` clean.
 
+## Pre-commit hooks
+
+Install [`prek`](https://github.com/j178/prek) and enable the repository hooks:
+
+```sh
+cargo install --locked prek
+prek install
+```
+
+Commits that include Rust files will run `cargo fmt --all -- --check` and
+`cargo clippy --workspace --all-targets --all-features -- -D warnings`. Run the
+hooks manually with `prek run --all-files`.
+
 ## Conformance
 
 If you change execution semantics, run the CTK:
 
 ```sh
-cargo run -p ows-runtime-cli -- conformance --ctk <path-to-ows-spec/ctk/features>
+cargo run -p ows-cli -- conformance --ctk <path-to-ows-spec/ctk/features>
 ```
 
 ## Commits

@@ -5,21 +5,21 @@
 ### Added
 
 - OWS runtime workspace with library-first architecture.
-- `ows-runtime-core`: typed errors (ProblemDetails, WorkflowError), injectable
+- `ows-core`: typed errors (ProblemDetails, WorkflowError), injectable
   clocks/RNG/UUIDs, `RuntimePolicy`, `ExecutionStore`, service/event/scheduler
   traits.
-- `ows-runtime-expressions`: sandboxed jq-subset interpreter with strict/loose
+- `ows-expressions`: sandboxed jq-subset interpreter with strict/loose
   expression handling, interpolation, and property-based tests.
-- `ows-runtime-dsl`: parsing (YAML/JSON), validation, and default normalization
+- `ows-dsl`: parsing (YAML/JSON), validation, and default normalization
   on top of the official `serverless_workflow_core` SDK.
-- `ows-runtime`: scope-based execution engine, all twelve OWS task types,
+- `ows`: scope-based execution engine, all twelve OWS task types,
   data-flow pipeline, flow directives, retries, timeouts, cancellation, and
   HTTP/OpenAPI function invokers.
-- `ows-runtime-events`: CloudEvents, event matching, and an in-memory broker.
-- `ows-runtime-scheduler`: scheduling abstractions and cron parsing.
-- `ows-runtime-observability`: tracing and OWS lifecycle event emission.
-- `ows-runtime-testing`: deterministic test helpers and fakes.
-- `ows-runtime-cli`: `validate`, `compile`, `run`, `conformance` subcommands with
+- `ows-events`: CloudEvents, event matching, and an in-memory broker.
+- `ows-scheduler`: scheduling abstractions and cron parsing.
+- `ows-observability`: tracing and OWS lifecycle event emission.
+- `ows-testing`: deterministic test helpers and fakes.
+- `ows-cli`: `validate`, `compile`, `run`, `conformance` subcommands with
   a Gherkin CTK runner.
 - `use.extensions` support: extension `before`/`after` tasks are compiled and
   executed around tasks of the extended type, guarded by `when`, with
@@ -39,7 +39,7 @@
 - Durable checkpoint/resume: the engine persists a per-top-level-task
   checkpoint and `Runtime::resume` continues a non-terminal execution.
 - OpenTelemetry OTLP/HTTP JSON spans and metrics (in addition to logs) in
-  `ows-runtime-observability-otel`.
+  `ows-observability-otel`.
 - OTLP/gRPC exporters for logs, spans and metrics behind the `otlp-grpc`
   feature (`opentelemetry-proto` + `tonic`).
 - Broker-based AsyncAPI transport (`transport.broker`) over the runtime's event
@@ -61,7 +61,7 @@
   server.
 - Data-driven tests: the official OWS CTK features and examples are vendored
   and executed in offline CI, plus a case-file suite under
-  `crates/ows-runtime/tests/fixtures/cases`.
+  `crates/ows/tests/fixtures/cases`.
 
 ### Conformance
 

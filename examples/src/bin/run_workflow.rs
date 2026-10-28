@@ -1,4 +1,4 @@
-use ows_runtime_examples::{execute_yaml, print_output, runtime, ExampleResult};
+use ows_examples::{execute_yaml, print_output, runtime, ExampleResult};
 use serde_json::json;
 
 #[tokio::main]

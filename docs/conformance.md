@@ -10,7 +10,7 @@ The CTK is a suite of Gherkin feature files in the OWS specification repository
 it, and asserts on the outcome (completion, output, faults, task ordering).
 
 The official CTK features are **vendored** into
-`crates/ows-runtime-cli/tests/ctk/features` (with attribution) so the
+`crates/ows-cli/tests/ctk/features` (with attribution) so the
 data-driven conformance suite runs in offline CI. Set `CTK_DIR` or
 `OWS_SPEC_REPO` to run against a different revision.
 
@@ -18,13 +18,13 @@ data-driven conformance suite runs in offline CI. Set `CTK_DIR` or
 
 ```sh
 # Deterministic scenarios (no network).
-cargo run -p ows-runtime-cli -- conformance --ctk <path-to-ctk/features>
+cargo run -p ows-cli -- conformance --ctk <path-to-ctk/features>
 
 # Include network-dependent scenarios (requires network access).
-cargo run -p ows-runtime-cli -- conformance --ctk <path-to-ctk/features> --include-network
+cargo run -p ows-cli -- conformance --ctk <path-to-ctk/features> --include-network
 
 # Write a machine-readable JSON report.
-cargo run -p ows-runtime-cli -- conformance --ctk <path> --output report.json
+cargo run -p ows-cli -- conformance --ctk <path> --output report.json
 ```
 
 Set `OWS_SPEC_REPO` to the specification repository checkout if you do not pass
@@ -32,13 +32,13 @@ Set `OWS_SPEC_REPO` to the specification repository checkout if you do not pass
 
 ```sh
 export OWS_SPEC_REPO=/path/to/specification
-cargo run -p ows-runtime-cli -- conformance
+cargo run -p ows-cli -- conformance
 ```
 
 There is also a library API:
 
 ```rust,ignore
-let report = ows_runtime_cli::conformance::run_ctk_with(
+let report = ows_cli::conformance::run_ctk_with(
     std::path::Path::new("/path/to/ctk/features"),
     /* include_network */ false,
 ).await;
@@ -61,7 +61,7 @@ time).
 The official CTK lives in the specification repository and is not vendored, so
 the `deterministic_ctk_scenarios_pass` test is skipped when no checkout is
 present. To keep conformance coverage meaningful in offline CI,
-`crates/ows-runtime-cli/tests/features/` contains a small deterministic Gherkin
+`crates/ows-cli/tests/features/` contains a small deterministic Gherkin
 suite (`set`, `for`, `fork`, `switch`). The
 `self_hosted_deterministic_scenarios_pass` test runs it through the same
 Gherkin runner, guarding the runner and the runtime's deterministic task

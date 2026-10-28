@@ -1,0 +1,163 @@
+document:
+  dsl: '1.0.3'
+  namespace: examples
+  name: download-novel-from-brightnovels
+  version: '0.1.0'
+
+input:
+  from: .
+  schema:
+    format: json
+    document:
+      type: object
+      required:
+        - novel_url
+      properties:
+        novel_url:
+          type: string
+          format: uri
+        chapter_from:
+          type: integer
+          minimum: 1
+        chapter_to:
+          type: integer
+          minimum: 1
+
+do:
+  - fetchSeries:
+      call: http
+      with:
+        method: get
+        endpoint: '${ .novel_url }'
+        headers:
+          User-Agent: 'ows-runtime example'
+        output: content
+      output:
+        as: '$input + { seriesHtml: $output }'
+
+  - parseSeries:
+      set: >-
+        ${
+          {
+            seriesPage: (
+              .seriesHtml
+              | split("data-page=\"")
+              | .[1]
+              | split("\"")
+              | .[0]
+              | split("&quot;")
+              | join("\"")
+              | fromjson
+            ),
+            novelUrl: .novel_url,
+            novelSlug: (
+              .novel_url
+              | split("/")
+              | map(select(. != ""))
+              | last
+            ),
+            chapterFrom: (.chapter_from // 1),
+            chapterTo: (.chapter_to // 5),
+            chapters: [],
+            downloaded: []
+          }
+        }
+
+  - fetchChapters:
+      call: http
+      with:
+        method: get
+        endpoint: '${ "https://brightnovels.com/series/" + .novelSlug + "/chapters" }'
+        headers:
+          Accept: application/json
+          User-Agent: 'ows-runtime example'
+        output: content
+      output:
+        as: '$input + { chaptersResponse: $output }'
+
+  - prepareChapters:
+      set: >-
+        ${
+          {
+            series: .seriesPage.props.series,
+            novelUrl: .novelUrl,
+            novelSlug: .novelSlug,
+            chapterFrom: .chapterFrom,
+            chapterTo: .chapterTo,
+            chapters: (
+              .chaptersResponse.chapters
+              | map(select(.is_premium != true))
+              | reverse
+              | map(. + {
+                  chapterNumber: (
+                    (.number // .chapter_number // (.name | split(" ") | last))
+                    | tonumber
+                  )
+                })
+              | map(select(.chapterNumber >= $input.chapterFrom and .chapterNumber <= $input.chapterTo))
+            ),
+            downloaded: []
+          }
+        }
+
+  - downloadChapters:
+      for:
+        each: chapter
+        at: chapterIndex
+        in: .chapters
+      do:
+        - fetchChapter:
+            call: http
+            with:
+              method: get
+              endpoint: '${ "https://brightnovels.com/series/" + $input.novelSlug + "/" + $chapter.slug }'
+              headers:
+                User-Agent: 'ows-runtime example'
+              output: content
+            output:
+              as: >-
+                $input + {
+                  downloaded: (
+                    $input.downloaded + [
+                      {
+                        number: ($chapterIndex + 1),
+                        slug: $chapter.slug,
+                        name: $chapter.name,
+                        url: ("https://brightnovels.com/series/" + $input.novelSlug + "/" + $chapter.slug),
+                        body: (
+                          $output
+                          | split("data-page=\"")
+                          | .[1]
+                          | split("\"")
+                          | .[0]
+                          | split("&quot;")
+                          | join("\"")
+                          | fromjson
+                          | .props.chapter.content
+                          | split("&amp;") | join("&")
+                          | split("&lt;") | join("<")
+                          | split("&gt;") | join(">")
+                          | split("&quot;") | join("\"")
+                          | split("&#039;") | join("'")
+                          | split("&apos;") | join("'")
+                          | split("&nbsp;") | join(" ")
+                        )
+                      }
+                    ]
+                  )
+                }
+
+  - result:
+      set: >-
+        ${
+          {
+            title: .series.title,
+            author: .series.user.name,
+            synopsis: .series.description,
+            cover: ("https://brightnovels.com/storage/" + .series.cover.path),
+            source: .novelUrl,
+            chapter_from: .chapterFrom,
+            chapter_to: .chapterTo,
+            chapters: .downloaded
+          }
+        }

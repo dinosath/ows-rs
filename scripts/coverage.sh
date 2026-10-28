@@ -6,13 +6,13 @@ set -euo pipefail
 
 THRESHOLD="${COVERAGE_THRESHOLD:-90.0}"
 PACKAGES=(
-  --package ows-runtime-core
-  --package ows-runtime-expressions
-  --package ows-runtime-dsl
-  --package ows-runtime-events
-  --package ows-runtime-scheduler
-  --package ows-runtime-observability
-  --package ows-runtime
+  --package ows-core
+  --package ows-expressions
+  --package ows-dsl
+  --package ows-events
+  --package ows-scheduler
+  --package ows-observability
+  --package ows
 )
 
 cargo llvm-cov --all-features --no-fail-fast "${PACKAGES[@]}" --summary-only \

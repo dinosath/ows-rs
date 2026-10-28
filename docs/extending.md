@@ -9,7 +9,7 @@ Implement the [`FunctionInvoker`](crate::service::FunctionInvoker) trait and
 register it:
 
 ```rust,ignore
-use ows_runtime::service::{FunctionInvoker, FunctionRequest};
+use ows::service::{FunctionInvoker, FunctionRequest};
 
 struct MyFunction;
 
@@ -38,7 +38,7 @@ Implement [`ServiceInvoker`](crate::service::ServiceInvoker) for a transport
 Implement [`EventPublisher`] and [`EventConsumer`](crate::service::EventConsumer)
 for a real broker (Kafka, NATS, HTTP binding) and provide them via
 `with_event_publisher` / `with_event_consumer`. The in-memory broker in
-`ows-runtime-events` is used for tests.
+`ows-events` is used for tests.
 
 ## Scheduling
 

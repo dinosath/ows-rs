@@ -30,7 +30,7 @@ cargo doc --workspace --all-features
 If you change execution semantics, run the CTK:
 
 ```sh
-cargo run -p ows-runtime-cli -- conformance --ctk <path-to-ows-spec/ctk/features>
+cargo run -p ows-cli -- conformance --ctk <path-to-ows-spec/ctk/features>
 ```
 
 ## Commits

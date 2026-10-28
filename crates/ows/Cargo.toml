@@ -1,0 +1,68 @@
+[package]
+name = "ows"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Execution engine for the Open Workflow Specification"
+repository.workspace = true
+
+[features]
+default = ["http", "validation"]
+# Enables the built-in HTTP and OpenAPI function invokers.
+http = ["dep:reqwest", "dep:base64"]
+# Enables JSON Schema input/output validation.
+validation = ["dep:jsonschema"]
+# Enables the native protobuf/HTTP-2 gRPC transport (dynamic messages).
+grpc-native = [
+    "dep:tonic",
+    "dep:prost",
+    "dep:prost-types",
+    "dep:prost-reflect",
+    "dep:protox",
+    "dep:protox-parse",
+]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+regex = { workspace = true }
+http = { workspace = true }
+indexmap = { workspace = true }
+url = { workspace = true }
+chrono = { workspace = true }
+jsonschema = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+base64 = { workspace = true, optional = true }
+ows-core = { path = "../ows-core" }
+ows-dsl = { path = "../ows-dsl" }
+ows-expressions = { path = "../ows-expressions" }
+ows-events = { path = "../ows-events" }
+ows-scheduler = { path = "../ows-scheduler" }
+ows-observability = { path = "../ows-observability" }
+serverless_workflow_core = { workspace = true }
+tonic = { version = "0.12", optional = true }
+prost = { version = "0.13", optional = true }
+prost-types = { version = "0.13", optional = true }
+prost-reflect = { version = "0.14", features = ["serde"], optional = true }
+protox = { version = "0.7", optional = true }
+protox-parse = { version = "0.7", optional = true }
+
+[dev-dependencies]
+ows-testing = { path = "../ows-testing" }
+proptest = { workspace = true }
+ows-events = { path = "../ows-events" }
+serde_yaml = { workspace = true }
+criterion = { workspace = true }
+tower = { version = "0.4", features = ["util"] }
+http-body-util = "0.1"
+bytes = "1"
+
+[[bench]]
+name = "runtime"
+harness = false

@@ -6,5 +6,5 @@ runtime. See [`docs/conformance.md`](../../docs/conformance.md).
 Run the CTK with:
 
 ```sh
-cargo run -p ows-runtime-cli -- conformance --ctk <path-to-ows-spec/ctk/features>
+cargo run -p ows-cli -- conformance --ctk <path-to-ows-spec/ctk/features>
 ```

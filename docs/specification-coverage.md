@@ -79,14 +79,14 @@ non-network ones.
   `Runtime::start_schedules`, which also registers each schedule with the
   configured `Scheduler` trait. A durable/distributed scheduler can still be
   layered on the trait for multi-node coordination.
-- `ows-runtime-stores` provides durable `ExecutionStore` backends (SQLite by
+- `ows-stores` provides durable `ExecutionStore` backends (SQLite by
   default; PostgreSQL and Redis behind features). The engine persists an
   execution's start record, per-top-level-task checkpoints (next index + scope
   input + context), terminal phase and lifecycle events. `Runtime::resume`
   reloads a non-terminal record and continues from the checkpoint, reusing the
   execution id; checkpoints are at top-level task boundaries. Store failures are
   logged, not fatal. Integration tests cover in-memory and SQLite resume.
-- `ows-runtime-observability-otel` exports lifecycle events to an
+- `ows-observability-otel` exports lifecycle events to an
   OpenTelemetry collector over OTLP/HTTP JSON as **logs, spans and metrics**,
   verified end to end against a loopback OTLP/HTTP collector, and over
   **OTLP/gRPC** behind the `otlp-grpc` feature (verified end to end against a

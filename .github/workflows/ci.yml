@@ -86,4 +86,4 @@ jobs:
           cd /tmp/ows-spec
           git checkout $(cat /tmp/ows-spec-rev 2>/dev/null || echo "main")
       - name: Run conformance (deterministic scenarios)
-        run: cargo run -p ows-runtime-cli -- conformance --ctk /tmp/ows-spec/ctk/features
+        run: cargo run -p ows-cli -- conformance --ctk /tmp/ows-spec/ctk/features

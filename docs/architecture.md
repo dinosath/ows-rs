@@ -2,26 +2,26 @@
 
 ## Overview
 
-`ows-runtime-rust` is a library-first Cargo workspace. The execution engine is
+`ows-rust` is a library-first Cargo workspace. The execution engine is
 kept independent of HTTP frameworks, databases, message brokers and cloud
 providers; those are adapters behind stable core traits defined in
-`ows-runtime-core`.
+`ows-core`.
 
 ## Crate layout
 
 | Crate | Responsibility |
 |-------|----------------|
-| `ows-runtime-core` | Core traits (`Clock`, `UuidGenerator`, `RandomGenerator`, `ExecutionStore`, `ServiceInvoker`, `EventPublisher`, `EventConsumer`, `Scheduler`, `ExpressionEngine`), typed errors (`ProblemDetails`, `WorkflowError`), `RuntimePolicy`, status `Phase`. |
-| `ows-runtime-dsl` | Parsing (YAML/JSON), schema/semantic validation, and default normalization on top of the official `serverless_workflow_core` SDK. |
-| `ows-runtime-expressions` | A fully sandboxed `jq`-subset interpreter. No `eval`, no shell, no arbitrary code. |
-| `ows-runtime-events` | CloudEvents shape, event matching/correlation, and an in-memory broker implementing `EventPublisher`/`EventConsumer`. |
-| `ows-runtime-scheduler` | Scheduling abstractions plus a cron-backed schedule parser. |
-| `ows-runtime-observability` | `tracing` setup and OWS lifecycle cloud-event emission. |
-| `ows-runtime` | Compilation pipeline and the scope-based execution engine, all task types, HTTP/OpenAPI function invokers. |
-| `ows-runtime-stores` | Durable `ExecutionStore` adapters (SQLite/PostgreSQL/Redis). |
-| `ows-runtime-observability-otel` | OTLP/HTTP JSON and OTLP/gRPC exporters for lifecycle logs, spans and metrics. |
-| `ows-runtime-testing` | Deterministic test helpers and fakes. |
-| `ows-runtime-cli` | Thin CLI: `validate`, `compile`, `run`, `conformance`. |
+| `ows-core` | Core traits (`Clock`, `UuidGenerator`, `RandomGenerator`, `ExecutionStore`, `ServiceInvoker`, `EventPublisher`, `EventConsumer`, `Scheduler`, `ExpressionEngine`), typed errors (`ProblemDetails`, `WorkflowError`), `RuntimePolicy`, status `Phase`. |
+| `ows-dsl` | Parsing (YAML/JSON), schema/semantic validation, and default normalization on top of the official `serverless_workflow_core` SDK. |
+| `ows-expressions` | A fully sandboxed `jq`-subset interpreter. No `eval`, no shell, no arbitrary code. |
+| `ows-events` | CloudEvents shape, event matching/correlation, and an in-memory broker implementing `EventPublisher`/`EventConsumer`. |
+| `ows-scheduler` | Scheduling abstractions plus a cron-backed schedule parser. |
+| `ows-observability` | `tracing` setup and OWS lifecycle cloud-event emission. |
+| `ows` | Compilation pipeline and the scope-based execution engine, all task types, HTTP/OpenAPI function invokers. |
+| `ows-stores` | Durable `ExecutionStore` adapters (SQLite/PostgreSQL/Redis). |
+| `ows-observability-otel` | OTLP/HTTP JSON and OTLP/gRPC exporters for lifecycle logs, spans and metrics. |
+| `ows-testing` | Deterministic test helpers and fakes. |
+| `ows-cli` | Thin CLI: `validate`, `compile`, `run`, `conformance`. |
 
 ## Compilation pipeline
 
@@ -70,7 +70,7 @@ See [`execution-model.md`](execution-model.md).
 
 ## Feature flags
 
-The `ows-runtime` crate exposes:
+The `ows` crate exposes:
 
 - `default = ["http", "validation"]`
 - `http` — the built-in HTTP and OpenAPI function invokers.

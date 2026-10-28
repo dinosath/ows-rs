@@ -3,9 +3,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use ows_runtime::{Runtime, TokioProcessRunner, Workflow};
-use ows_runtime_core::{EventMessage, EventPublisher, RuntimePolicy};
-use ows_runtime_events::InMemoryBroker;
+use ows::{Runtime, TokioProcessRunner, Workflow};
+use ows_core::{EventMessage, EventPublisher, RuntimePolicy};
+use ows_events::InMemoryBroker;
 use serde_json::{json, Value};
 
 pub type ExampleResult<T> = Result<T, Box<dyn Error>>;

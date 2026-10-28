@@ -16,22 +16,22 @@ Structured events are emitted for:
 - event received
 - external call started / completed
 
-Binaries can install a subscriber with `ows_runtime_observability::init_tracing()`.
+Binaries can install a subscriber with `ows_observability::init_tracing()`.
 
 ## Lifecycle cloud events
 
 The OWS DSL defines lifecycle cloud events
 (`io.serverlessworkflow.workflow.*.v1`, `io.serverlessworkflow.task.*.v1`). The
-`ows-runtime-observability` crate's `LifecycleEmitter` builds and publishes these
+`ows-observability` crate's `LifecycleEmitter` builds and publishes these
 through the core [`EventPublisher`](crate::service::EventPublisher) trait.
 
 Because events flow through `EventPublisher`, an OpenTelemetry adapter, an HTTP
 binding, or a broker adapter can be added without changing the engine. The
-in-memory broker in `ows-runtime-events` is used for tests and local development.
+in-memory broker in `ows-events` is used for tests and local development.
 
 ## OpenTelemetry
 
-The `ows-runtime-observability-otel` crate bridges lifecycle events to
+The `ows-observability-otel` crate bridges lifecycle events to
 OpenTelemetry by implementing `EventPublisher`:
 
 - `OpenTelemetryLogsPublisher` — OTLP/HTTP JSON log records.

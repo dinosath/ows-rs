@@ -11,7 +11,7 @@ Status meanings: **Supported** is implemented and covered by automated tests;
 
 | Spec section | Supported | Partial | Missing | Tests | Notes |
 |---|---|---|---|---|---|
-| Workflow document and metadata | document, namespace, name, version, title, summary, tags | DSL version acceptance is limited to `1.x` | schema-generated validation | `crates/ows-runtime-dsl/src/lib.rs` tests; `crates/ows-runtime-dsl/tests/serialization.rs` | `Workflow::from_yaml` / `from_json` are the library entry points. |
+| Workflow document and metadata | document, namespace, name, version, title, summary, tags | DSL version acceptance is limited to `1.x` | schema-generated validation | `crates/ows-dsl/src/lib.rs` tests; `crates/ows-dsl/tests/serialization.rs` | `Workflow::from_yaml` / `from_json` are the library entry points. |
 | JSON/YAML model | serde JSON/YAML deserialization and serialization; normalized fork defaults; ordered task maps | the upstream SDK has no `schemars` derives | independent generated JSON Schema artifact | DSL serialization tests | YAML and JSON are normalized through the same `serde_json::Value` path. |
 | Workflow input/output and data flow | schema validation, `from`/`as` transforms, export/context propagation, null/object/array values | schema validation is feature-gated and uses `jsonschema` | — | `basic.rs`, `tasks.rs`, `data_driven.rs` | Runtime validation occurs before and after mapping stages. |
 | Flow directives | `continue`, `exit`, `end`, named task targets | graph diagnostics model guarded and switch fall-through conservatively | prohibited-cycle policy is not applicable to ordinary OWS named transitions | `basic.rs`, `errors.rs`, DSL validation tests | Cycles are allowed because named transitions can intentionally repeat work. |
@@ -22,7 +22,7 @@ Status meanings: **Supported** is implemented and covered by automated tests;
 | Switch task | ordered conditions, default case, transitions | no-match behavior is modeled as fall-through | — | `tasks.rs`, `more_tasks.rs`, `task_coverage.rs` | |
 | Try/catch task | error filters, `when`, `exceptWhen`, retries, handler scope | adapter-specific external errors depend on the invoker | — | `tasks.rs`, `errors.rs`, `task_coverage.rs` | |
 | Raise task | inline and reusable errors with typed workflow faults | — | — | `basic.rs`, `errors.rs`, `task_coverage.rs` | |
-| Emit task | CloudEvent construction and publication | broker adapters are separate crates/traits | — | `more_tasks.rs`, `ows-runtime-events` tests | |
+| Emit task | CloudEvent construction and publication | broker adapters are separate crates/traits | — | `more_tasks.rs`, `ows-events` tests | |
 | Listen task | one/any/all, filters, correlation, until, foreach | external brokers require an `EventConsumer` implementation | — | `listen_*.rs`, event unit tests | |
 | Wait task | duration parsing and async waiting | cancellation/clock behavior is adapter-driven | — | `more_tasks.rs`, clock tests | |
 | Call task | generic invoker plus HTTP, OpenAPI, gRPC, AsyncAPI, A2A, MCP adapters | network and protocol support is opt-in/policy controlled; some authentication schemes are not applied | — | `http*.rs`, `protocol_adapters.rs`, service tests | The runtime itself remains generic; adapters implement calls. |
@@ -32,10 +32,10 @@ Status meanings: **Supported** is implemented and covered by automated tests;
 | Lifecycle | running, completed, faulted, cancelled, waiting/pending phase types | pending/waiting/suspended are represented in core but the in-memory run path only emits running and terminal phases | server lifecycle management | core phase tests; runtime behavior tests | Hosting, persistence, scheduling, and monitoring are intentionally outside the core runtime API. |
 | Sub-workflows | `run.workflow` lookup and execution through registered compiled workflows | referenced workflows must be registered in the runtime | dynamic deployment/version resolution | `more_tasks.rs` | No registry service or deployment behavior is implied. |
 | Components (`use`) | errors, retries, timeouts, functions, extensions, secrets, catalogs | catalog HTTP resolution and authentication coverage are policy/adapter limited | — | component, catalog, extension, secret tests | These are definition-time/runtime dependencies, not a persistence platform. |
-| Conformance | deterministic CTK/self-hosted scenarios and official examples vendored in fixtures | network CTK cases are opt-in; not every upstream example is represented as a dedicated test | exhaustive latest official YAML/JSON fixture mirror | `crates/ows-runtime-cli/tests/conformance.rs`, `examples.rs`, `tests/conformance` | The vendored CTK revision and known discrepancy are documented in `docs/conformance.md`. |
-| Property testing | expression property tests and malformed-input no-panic coverage | workflow graph generation is not yet present | full workflow graph/property matrix | `ows-runtime-expressions/tests/property.rs` | |
+| Conformance | deterministic CTK/self-hosted scenarios and official examples vendored in fixtures | network CTK cases are opt-in; not every upstream example is represented as a dedicated test | exhaustive latest official YAML/JSON fixture mirror | `crates/ows-cli/tests/conformance.rs`, `examples.rs`, `tests/conformance` | The vendored CTK revision and known discrepancy are documented in `docs/conformance.md`. |
+| Property testing | expression property tests and malformed-input no-panic coverage | workflow graph generation is not yet present | full workflow graph/property matrix | `ows-expressions/tests/property.rs` | |
 | Fuzzing | — | — | cargo-fuzz targets for parsers, validator, and engine | — | No `fuzz/` workspace target currently exists. |
-| Benchmarks | criterion benchmarks for parsing, compile, expressions, simple execution | benchmark matrix is small | allocation/deep-nesting/parallel benchmark suite | `crates/ows-runtime/benches/runtime.rs` | |
+| Benchmarks | criterion benchmarks for parsing, compile, expressions, simple execution | benchmark matrix is small | allocation/deep-nesting/parallel benchmark suite | `crates/ows/benches/runtime.rs` | |
 | `schemars` support | — | — | derived schema generation | — | The current official SDK uses serde derives, not schemars. Adding it would be a separate model/schema-generation change. |
 
 ## Runtime architecture
@@ -62,8 +62,8 @@ data mapping, context/export, workflow output
 The library-facing path is:
 
 ```rust,ignore
-let workflow = ows_runtime::Workflow::from_yaml(yaml)?;
-let runtime = ows_runtime::Runtime::new();
+let workflow = ows::Workflow::from_yaml(yaml)?;
+let runtime = ows::Runtime::new();
 let result = runtime.run(&workflow, input).await?;
 ```
 

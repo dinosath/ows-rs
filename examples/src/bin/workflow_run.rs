@@ -1,4 +1,4 @@
-use ows_runtime_examples::{run_script_workflow, ExampleResult};
+use ows_examples::{run_script_workflow, ExampleResult};
 
 #[tokio::main]
 async fn main() -> ExampleResult<()> {
